@@ -8,3 +8,4 @@ log/*
 
 # VSCode
 .vscode/*
+!.vscode/tasks.json

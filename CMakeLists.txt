@@ -1,9 +1,33 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.20)
 project(sinsei_umiusi_core)
 
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
+# default compiler flags
+add_compile_options(
+  -Wall
+  -Wextra
+  -Wpedantic
+
+  $<$<CONFIG:Release>:-O3>
+  $<$<CONFIG:Debug>:-O0>
+)
+
+# C/C++ version required by ROS2 jazzy
+# require C99
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+# require C++17
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# set sccache
+find_program(SCCACHE_EXE sccache)
+if(SCCACHE_EXE)
+  set(CMAKE_C_COMPILER_LAUNCHER ${SCCACHE_EXE})
+  set(CMAKE_CXX_COMPILER_LAUNCHER ${SCCACHE_EXE})
 endif()
+
+# for clang-tools
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
@@ -29,4 +53,23 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_auto_package()
+ament_auto_package(
+  USE_SCOPED_HEADER_INSTALL_DIR
+  INSTALL_TO_SHARE
+)
+
+# ! 以下、後ろの方に書かないと無限ループに陥るので注意
+# ! ref: https://stackoverflow.com/questions/32306648/changing-compiler-with-cmake-creates-infinite-loop
+
+# set clang as the default compiler if available
+# TODO: gcovまわりのバグが解消できたら有効化
+# find_program(CLANG_EXE clang)
+# if(CLANG_EXE)
+#   set(CMAKE_C_COMPILER ${CLANG_EXE})
+#   set(CMAKE_CXX_COMPILER ${CLANG_EXE}++)
+#   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fuse-ld=lld")
+#   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fuse-ld=lld")
+# else()
+  set(CMAKE_C_COMPILER gcc)
+  set(CMAKE_CXX_COMPILER g++)
+# endif()
