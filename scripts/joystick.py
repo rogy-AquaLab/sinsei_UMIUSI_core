@@ -47,13 +47,13 @@ class Joystick(Node):
         velocity_msg = Vector3(
             x = axes[0],
             y = -axes[1],
-            z = 0
+            z = 0.0
         )
         # 右スティック
         orientation_msg = Vector3(
             x = axes[3],
             y = -axes[4],
-            z = 0
+            z = 0.0
         )
         # 丸ボタン
         indicator_led_msg = Bool(data=bool(buttons[1]))
