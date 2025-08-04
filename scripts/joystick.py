@@ -8,7 +8,7 @@ import pygame
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Vector3
-from std_msgs.msg import Header, Bool
+from std_msgs.msg import Bool
 
 
 class Joystick(Node):
@@ -25,13 +25,6 @@ class Joystick(Node):
         # logging
         name = self._joystick.get_name()
         self.get_logger().info(f"Using controller: {name}")
-
-    def _generate_header(self) -> Header:
-        from builtin_interfaces.msg import Time
-
-        now = self.get_clock().now().to_msg()
-        assert isinstance(now, Time)
-        return Header(frame_id="joystick", stamp=now)
 
     def _timer_callback(self):
         self.get_logger().debug("tick")
