@@ -43,9 +43,9 @@ class Joystick(Node):
         axes = [self._joystick.get_axis(i) for i in range(numaxes)]
         buttons = [int(self._joystick.get_button(i)) for i in range(numbuttons)]
         # 左スティック
-        velocity_msg = Vector3(x=axes[0], y=-axes[1], z=0.0)
+        velocity_msg = Vector3(x=-axes[1], y=-axes[0], z=0.0)
         # 右スティック
-        orientation_msg = Vector3(x=axes[3], y=-axes[4], z=0.0)
+        orientation_msg = Vector3(x=-axes[4], y=-axes[3], z=0.0)
         # 丸ボタン
         indicator_led_msg = Bool(data=bool(buttons[1]))
         self._velocity_publisher.publish(velocity_msg)
