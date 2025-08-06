@@ -32,6 +32,8 @@ class Joystick(Node):
         name = self._joystick.get_name()
         self.get_logger().info(f'Using controller: {name}')
 
+        self._is_stopped = False
+
     def _timer_callback(self):
         self.get_logger().debug('tick')
         pygame.event.pump()
@@ -40,14 +42,31 @@ class Joystick(Node):
         numbuttons = self._joystick.get_numbuttons()
         self.get_logger().info(f'Found {numaxes} axes and {numbuttons} buttons')
 
-        axes = [self._joystick.get_axis(i) for i in range(numaxes)]
-        buttons = [int(self._joystick.get_button(i)) for i in range(numbuttons)]
+        l_stick_horizontal = self._joystick.get_axis(0)  # 右が正
+        l_stick_vertical = self._joystick.get_axis(1)  # 下が正
+        r_stick_horizontal = self._joystick.get_axis(3)
+        r_stick_vertical = self._joystick.get_axis(4)
+
+        self._is_stopped = self._is_stopped or self._joystick.get_button(0)
+
+        self.get_logger().info(f'_is_stopped: {self._is_stopped}')
+
+        if self._is_stopped:
+            circle_pressed = self._joystick.get_button(1)
+            if not circle_pressed:
+                self._velocity_publisher.publish(Vector3(0, 0, 0))
+                self._orientation_publisher.publish(Vector3(0, 0, 0))
+                self._indicator_led_publisher.publish(Bool(data=False))
+                return
+
+            self._is_stopped = False
+
         # 左スティック
-        velocity_msg = Vector3(x=-axes[1], y=-axes[0], z=0.0)
+        velocity_msg = Vector3(x=-l_stick_vertical, y=-l_stick_horizontal, z=0.0)
         # 右スティック
-        orientation_msg = Vector3(x=-axes[4], y=-axes[3], z=0.0)
-        # 丸ボタン
-        indicator_led_msg = Bool(data=bool(buttons[1]))
+        orientation_msg = Vector3(x=-0.0, y=r_stick_vertical, z=r_stick_horizontal)
+        # 三角ボタン
+        indicator_led_msg = Bool(data=bool(self._joystick.get_button[2]))
         self._velocity_publisher.publish(velocity_msg)
         self._orientation_publisher.publish(orientation_msg)
         self._indicator_led_publisher.publish(indicator_led_msg)
