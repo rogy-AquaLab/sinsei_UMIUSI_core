@@ -10,6 +10,7 @@ on:
   pull_request:
     branches:
       - main
+      - just-move # コンテナプール用
     paths-ignore:
       - "docs/**"
       - "**.md"
