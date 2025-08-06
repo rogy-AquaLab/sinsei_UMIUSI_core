@@ -66,7 +66,7 @@ class Joystick(Node):
         # 右スティック
         orientation_msg = Vector3(x=-0.0, y=r_stick_vertical, z=r_stick_horizontal)
         # 三角ボタン
-        indicator_led_msg = Bool(data=bool(self._joystick.get_button[2]))
+        indicator_led_msg = Bool(data=bool(self._joystick.get_button(2)))
         self._velocity_publisher.publish(velocity_msg)
         self._orientation_publisher.publish(orientation_msg)
         self._indicator_led_publisher.publish(indicator_led_msg)
