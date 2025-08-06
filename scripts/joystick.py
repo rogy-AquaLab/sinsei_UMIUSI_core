@@ -54,8 +54,8 @@ class Joystick(Node):
         if self._is_stopped:
             circle_pressed = self._joystick.get_button(1)
             if not circle_pressed:
-                self._velocity_publisher.publish(Vector3(0, 0, 0))
-                self._orientation_publisher.publish(Vector3(0, 0, 0))
+                self._velocity_publisher.publish(Vector3(x=0.0, y=0.0, z=0.0))
+                self._orientation_publisher.publish(Vector3(x=0.0, y=0.0, z=0.0))
                 self._indicator_led_publisher.publish(Bool(data=False))
                 return
 
