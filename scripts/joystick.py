@@ -42,10 +42,15 @@ class Joystick(Node):
         numbuttons = self._joystick.get_numbuttons()
         self.get_logger().info(f'Found {numaxes} axes and {numbuttons} buttons')
 
-        l_stick_horizontal = self._joystick.get_axis(0)  # 右が正
-        l_stick_vertical = self._joystick.get_axis(1)  # 下が正
-        r_stick_horizontal = self._joystick.get_axis(3)
-        r_stick_vertical = self._joystick.get_axis(4)
+        limit = 0.1
+        l_stick_horizontal = self.round_with_limit(
+            self._joystick.get_axis(0), limit
+        )  # 右が正
+        l_stick_vertical = self.round_with_limit(
+            self._joystick.get_axis(1), limit
+        )  # 下が正
+        r_stick_horizontal = self.round_with_limit(self._joystick.get_axis(3), limit)
+        r_stick_vertical = self.round_with_limit(self._joystick.get_axis(4), limit)
 
         self._is_stopped = self._is_stopped or self._joystick.get_button(0)
 
@@ -70,6 +75,9 @@ class Joystick(Node):
         self._velocity_publisher.publish(velocity_msg)
         self._orientation_publisher.publish(orientation_msg)
         self._indicator_led_publisher.publish(indicator_led_msg)
+
+    def round_with_limit(value, limit):
+        return 0 if abs(value) <= limit else value
 
 
 def main(args=sys.argv):
