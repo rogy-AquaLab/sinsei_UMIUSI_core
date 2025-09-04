@@ -15,6 +15,7 @@ on:
       - "**.md"
 
 env:
+  PACKAGE_NAME: sinsei_umiusi_core # default value, can be overridden by `.env` file
   ROS_DISTRO: jazzy # default value, can be overridden by `.env` file
 
 jobs:
@@ -169,7 +170,7 @@ jobs:
       - name: Colcon Test
         uses: ros-tooling/action-ros-ci@v0.4
         with:
-          package-name: sinsei_umiusi_core
+          package-name: ${{ env.PACKAGE_NAME }}
           target-ros2-distro: ${{ env.ROS_DISTRO }}
           # extra-cmake-args: |
           #   -DCMAKE_CXX_FLAGS='-coverage' \
