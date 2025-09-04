@@ -80,7 +80,7 @@ jobs:
         with:
           package-name: ${{ env.PACKAGE_NAME }}
           target-ros2-distro: ${{ env.ROS_DISTRO }}
-          vcs-repo-file-url: ${{ github.event.repository.name }}/deps.repos
+          vcs-repo-file-url: /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}/deps.repos
           rosdep-check: true
           skip-tests: true
 
