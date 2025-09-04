@@ -61,6 +61,7 @@ jobs:
         uses: actions/checkout@v4
 
       - run: |
+          apt-get update && apt-get install -y python3-rosinstall-generator && \
           rosinstall_generator ${{ env.PACKAGE_NAME }} --rosdistro ${{ env.ROS_DISTRO }} \
           --deps-only --deps --upstream-development > /tmp/deps.repos
 
