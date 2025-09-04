@@ -61,11 +61,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - run: |
-          apt-get update && apt-get install -y python3-rosinstall-generator && \
-          rosinstall_generator ${{ env.PACKAGE_NAME }} --rosdistro ${{ env.ROS_DISTRO }} \
-          --deps-only --deps --upstream-development > /tmp/deps.repos
-
       - name: Fetch cache
         uses: actions/cache@v4
         env:
@@ -85,7 +80,7 @@ jobs:
         with:
           package-name: ${{ env.PACKAGE_NAME }}
           target-ros2-distro: ${{ env.ROS_DISTRO }}
-          vcs-repo-file-url: /tmp/deps.repos
+          vcs-repo-file-url: ${{ github.event.repository.name }}/deps.repos
           rosdep-check: true
           skip-tests: true
 
