@@ -65,7 +65,7 @@ jobs:
       - name: Checkout `deps.repos`
         uses: actions/checkout@v4
         with:
-          sparse-checkout: deps.repos
+          filter: deps.repos
 
       - run: |
           rosinstall_generator ${{ env.PACKAGE_NAME }} --rosdistro ${{ env.ROS_DISTRO }} \
