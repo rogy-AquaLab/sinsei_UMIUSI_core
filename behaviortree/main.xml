@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root BTCPP_format="4"
+      main_tree_to_execute="main">
+  <BehaviorTree ID="main">
+    <ParallelAll max_failures="1">
+      <KeepRunningUntilFailure>
+        <PublishDisplayInfo name="Publish display info"/>
+      </KeepRunningUntilFailure>
+      <KeepRunningUntilFailure>
+        <LowPowerCircuitCheck name="Low-power circuit check"/>
+      </KeepRunningUntilFailure>
+      <KeepRunningUntilFailure>
+        <HighPowerCircuitCheck name="High-power circuit check"/>
+      </KeepRunningUntilFailure>
+      <Sequence>
+        <WaitForPowerOnOrder name="Wait for power-on order"/>
+        <HealthCheck name="Health check"/>
+        <SubTree ID="power_on"
+                 _autoremap="true"/>
+      </Sequence>
+    </ParallelAll>
+  </BehaviorTree>
+
+  <BehaviorTree ID="power_on">
+    <KeepRunningUntilFailure>
+      <AlwaysSuccess/>
+    </KeepRunningUntilFailure>
+  </BehaviorTree>
+
+  <!-- Description of Node Models (used by Groot) -->
+  <TreeNodesModel>
+    <Action ID="HealthCheck"
+            editable="true"/>
+    <Action ID="HighPowerCircuitCheck"
+            editable="true"/>
+    <Action ID="LowPowerCircuitCheck"
+            editable="true"/>
+    <Action ID="PublishDisplayInfo"
+            editable="true"/>
+    <Action ID="WaitForPowerOnOrder"
+            editable="true"/>
+  </TreeNodesModel>
+
+</root>
