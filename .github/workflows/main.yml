@@ -19,5 +19,6 @@ jobs:
       - name: Build and Run tests
         uses: ros-tooling/action-ros-ci@v0.4
         with:
+          package-name: sinsei_umiusi_core
           target-ros2-distro: jazzy
           rosdep-check: true

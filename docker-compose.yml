@@ -9,7 +9,7 @@ services:
       args:
         ros_distro: ${ROS_DISTRO}
     user: "${USER_ID}:${GROUP_ID}"
-    working_dir: /home/ubuntu/ros_ws/src
+    working_dir: /home/ubuntu/ros_ws
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - .:/home/ubuntu/ros_ws/src/pkg:rw
@@ -25,9 +25,9 @@ services:
       - command: |
           sudo apt update && \
           rosdep update && \
-          rosdep install -i --from-paths pkg -y; \
+          rosdep install -i --from-paths src/pkg -y; \
         user: ubuntu
-        working_dir: /home/ubuntu/ros_ws/src
+        working_dir: /home/ubuntu/ros_ws
     restart: always
     ipc: host
     privileged: true

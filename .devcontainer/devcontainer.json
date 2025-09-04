@@ -1,8 +1,8 @@
 {
   "dockerComposeFile": "../docker-compose.yml",
   "service": "work",
-  "workspaceFolder": "/home/ubuntu/ros_ws/src",
-  "postCreateCommand": "vcs import . < pkg/deps.repos",
+  "workspaceFolder": "/home/ubuntu/ros_ws",
+  "postCreateCommand": "vcs import src < src/pkg/deps.repos",
   "customizations": {
     "vscode": {
       "extensions": [
