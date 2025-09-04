@@ -1,57 +1,57 @@
 {
-    "dockerComposeFile": "../docker-compose.yml",
-    "service": "work",
-    "workspaceFolder": "/home/ubuntu/ros_ws/src/pkg",
-    "postCreateCommand": "sudo apt update && rosdep update && rosdep install -i --from-paths . -y",
-    "customizations": {
-        "vscode": {
-            "extensions": [
-                "charliermarsh.ruff",
-                "llvm-vs-code-extensions.vscode-clangd",
-                "ranch-hand-robotics.rde-pack",
-                "ms-python.python",
-                "ms-vscode.cpptools",
-                "ms-vscode.cmake-tools",
-                "redhat.vscode-xml",
-                "redhat.vscode-yaml",
-                "editorconfig.editorconfig"
-            ],
-            "settings": {
-                "editor.formatOnSave": true,
-                "[xml]": {
-                    "editor.defaultFormatter": "redhat.vscode-xml"
-                },
-                "[yaml]": {
-                    "editor.defaultFormatter": "redhat.vscode-yaml"
-                },
-                "[python]": {
-                    "editor.defaultFormatter": "charliermarsh.ruff"
-                },
-                "python.analysis.inlayHints.callArgumentNames": "partial",
-                "python.analysis.inlayHints.functionReturnTypes": true,
-                "python.analysis.inlayHints.variableTypes": true,
-                "python.analysis.inlayHints.pytestParameters": true,
-                "[cpp]": {
-                    "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
-                },
-                "clangd.path": "clangd-18",
-                "clangd.arguments": [
-                    "--compile-commands-dir=${workspaceFolder}/build"
-                ],
-                "clangd.fallbackFlags": [
-                    "-std=c99",
-                    "-std=gnu++17",
-                    "-Wall",
-                    "-Wextra",
-                    "-Wpedantic"
-                ],
-                "C_Cpp.codeAnalysis.runAutomatically": false,
-                "C_Cpp.hover": "disabled",
-                "C_Cpp.intelliSenseEngine": "disabled",
-                "[ros.msg]": {
-                    "editor.defaultFormatter": "Ranch-Hand-Robotics.rde-ros-2"
-                }
-            }
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "work",
+  "workspaceFolder": "/home/ubuntu/ros_ws/src",
+  "postCreateCommand": "vcs import . < pkg/deps.repos",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "charliermarsh.ruff",
+        "llvm-vs-code-extensions.vscode-clangd",
+        "ranch-hand-robotics.rde-pack",
+        "ms-python.python",
+        "ms-vscode.cpptools",
+        "ms-vscode.cmake-tools",
+        "redhat.vscode-xml",
+        "redhat.vscode-yaml",
+        "editorconfig.editorconfig"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "[xml]": {
+          "editor.defaultFormatter": "redhat.vscode-xml"
+        },
+        "[yaml]": {
+          "editor.defaultFormatter": "redhat.vscode-yaml"
+        },
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff"
+        },
+        "python.analysis.inlayHints.callArgumentNames": "partial",
+        "python.analysis.inlayHints.functionReturnTypes": true,
+        "python.analysis.inlayHints.variableTypes": true,
+        "python.analysis.inlayHints.pytestParameters": true,
+        "[cpp]": {
+          "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
+        },
+        "clangd.path": "clangd-18",
+        "clangd.arguments": [
+          "--compile-commands-dir=${workspaceFolder}/build"
+        ],
+        "clangd.fallbackFlags": [
+          "-std=c99",
+          "-std=gnu++17",
+          "-Wall",
+          "-Wextra",
+          "-Wpedantic"
+        ],
+        "C_Cpp.codeAnalysis.runAutomatically": false,
+        "C_Cpp.hover": "disabled",
+        "C_Cpp.intelliSenseEngine": "disabled",
+        "[ros.msg]": {
+          "editor.defaultFormatter": "Ranch-Hand-Robotics.rde-ros-2"
         }
+      }
     }
+  }
 }

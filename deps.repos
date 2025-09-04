@@ -1,0 +1,5 @@
+repositories:
+  sinsei_umiusi_control:
+    type: git
+    url: git@github.com:rogy-AquaLab/sinsei_UMIUSI_control.git
+    version: main
