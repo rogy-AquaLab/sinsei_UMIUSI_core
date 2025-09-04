@@ -58,8 +58,10 @@ jobs:
       image: rostooling/setup-ros-docker:ubuntu-noble-ros-jazzy-desktop-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout install script
         uses: actions/checkout@v4
+        with:
+          sparse-checkout: .docker/scripts
 
       - name: Fetch cache
         uses: actions/cache@v4
@@ -80,8 +82,6 @@ jobs:
         with:
           package-name: ${{ env.PACKAGE_NAME }}
           target-ros2-distro: ${{ env.ROS_DISTRO }}
-          vcs-repo-file-url: /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}/deps.repos
-          rosdep-check: true
           skip-tests: true
 
       - name: Upload ROS C++ libraries
