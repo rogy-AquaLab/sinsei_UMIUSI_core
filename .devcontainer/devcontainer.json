@@ -2,7 +2,7 @@
   "dockerComposeFile": "../docker-compose.yml",
   "service": "work",
   "workspaceFolder": "/home/ubuntu/ros_ws",
-  "postCreateCommand": "vcs import src < src/pkg/deps.repos",
+  "postCreateCommand": "sudo apt update && rosdep update && rosdep install -i --from-paths src/pkg -y; vcs import src < src/pkg/deps.repos",
   "customizations": {
     "vscode": {
       "extensions": [

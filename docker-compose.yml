@@ -25,7 +25,7 @@ services:
       - command: |
           sudo apt update && \
           rosdep update && \
-          rosdep install -i --from-paths src/pkg -y; \
+          rosdep install -i --from-paths src/pkg -y
         user: ubuntu
         working_dir: /home/ubuntu/ros_ws
     restart: always
