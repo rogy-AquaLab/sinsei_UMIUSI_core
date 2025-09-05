@@ -37,7 +37,9 @@ ament_auto_find_build_dependencies()
 
 ament_auto_add_executable(
   ${PROJECT_NAME}_behaviortree
-  src/${PROJECT_NAME}/behaviortree.cpp
+  src/${PROJECT_NAME}/behaviortree/main.cpp
+  src/${PROJECT_NAME}/behaviortree/ros_stateful_action_node.cpp
+  src/${PROJECT_NAME}/behaviortree/ros_sync_action_node.cpp
 )
 
 if(BUILD_TESTING)

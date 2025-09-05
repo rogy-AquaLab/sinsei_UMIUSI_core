@@ -13,7 +13,7 @@
         <HighPowerCircuitCheck name="High-power circuit check"/>
       </KeepRunningUntilFailure>
       <Sequence>
-        <WaitForPowerOnOrder name="Wait for power-on order"/>
+        <PowerOff name="Power off (wait for power-on order)"/>
         <HealthCheck name="Health check"/>
         <SubTree ID="power_on"
                  _autoremap="true"/>
