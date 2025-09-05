@@ -35,7 +35,12 @@ ament_auto_find_build_dependencies()
 
 # ament_auto_add_library(...)
 
-# ament_auto_add_executable(...)
+ament_auto_add_executable(
+  ${PROJECT_NAME}_behaviortree
+  src/${PROJECT_NAME}/behaviortree/main.cpp
+  src/${PROJECT_NAME}/behaviortree/ros_stateful_action_node.cpp
+  src/${PROJECT_NAME}/behaviortree/ros_sync_action_node.cpp
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
