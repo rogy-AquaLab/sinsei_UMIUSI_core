@@ -9,7 +9,7 @@ services:
       args:
         ros_distro: ${ROS_DISTRO}
     user: "${USER_ID}:${GROUP_ID}"
-    working_dir: /home/ubuntu/ros_ws/src/pkg
+    working_dir: /home/ubuntu/ros_ws
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - .:/home/ubuntu/ros_ws/src/pkg:rw
@@ -18,6 +18,16 @@ services:
       DISPLAY:
       ROS_DOMAIN_ID:
       RCUTILS_COLORIZED_OUTPUT:
+    post_start:
+      - command: |
+          chown -R ${USER_ID}:${GROUP_ID} /home/ubuntu
+        user: root
+      - command: |
+          sudo apt update && \
+          rosdep update && \
+          rosdep install -i --from-paths src/pkg -y
+        user: ubuntu
+        working_dir: /home/ubuntu/ros_ws
     restart: always
     ipc: host
     privileged: true
