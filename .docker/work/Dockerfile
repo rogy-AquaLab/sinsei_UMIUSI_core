@@ -2,6 +2,12 @@ ARG ros_distro=jazzy
 
 FROM osrf/ros:${ros_distro}-desktop
 
+# Copy scripts temporarily
+COPY ../scripts/* /tmp/scripts/
+RUN for file in /tmp/scripts/*.sh; do \
+    chmod +x "$file"; \
+    done
+
 RUN apt-get update && apt-get install -y \
     git \
     clang \
@@ -10,7 +16,12 @@ RUN apt-get update && apt-get install -y \
     clang-tidy-18 \
     sccache
 
+# Install editorconfig-checker
+RUN /tmp/scripts/install-ec.sh
+
 RUN rm -rf /var/lib/apt/lists/*
+
+RUN rm -rf /tmp/*
 
 RUN echo "%ubuntu ALL=(ALL:ALL) NOPASSWD: ALL" > /etc/sudoers.d/ubuntu
 
