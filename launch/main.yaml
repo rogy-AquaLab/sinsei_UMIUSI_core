@@ -1,0 +1,5 @@
+launch:
+  - group:
+      - node:
+          pkg: "sinsei_umiusi_core"
+          exec: "robot_strategy.py"
