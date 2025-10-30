@@ -1,4 +1,11 @@
 launch:
+  - let:
+      name: rosbridge_launch_file
+      value: "$(find-pkg-share rosbridge_server)/launch/rosbridge_websocket_launch.xml"
+
+  - include:
+      file: "$(var rosbridge_launch_file)"
+
   - group:
       - node:
           pkg: "sinsei_umiusi_core"

@@ -2,6 +2,9 @@ ARG ros_distro=jazzy
 
 FROM osrf/ros:${ros_distro}-desktop
 
+ARG ros_distro
+ENV ROS_DISTRO=${ros_distro}
+
 # Copy scripts temporarily
 COPY ../scripts/* /tmp/scripts/
 RUN for file in /tmp/scripts/*.sh; do \
@@ -14,7 +17,8 @@ RUN apt-get update && apt-get install -y \
     clangd-18 \
     clang-format-18 \
     clang-tidy-18 \
-    sccache
+    sccache \
+    ros-${ROS_DISTRO}-rosbridge-suite
 
 # Install editorconfig-checker
 RUN /tmp/scripts/install-ec.sh
