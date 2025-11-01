@@ -40,7 +40,7 @@ ament_auto_find_build_dependencies()
 ament_python_install_package(${PROJECT_NAME})
 
 install(PROGRAMS
-  src/${PROJECT_NAME}/robot_strategy/robot_strategy.py
+  src/${PROJECT_NAME}/low_power_health_check/low_power_health_check.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

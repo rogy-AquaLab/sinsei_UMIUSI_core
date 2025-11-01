@@ -9,4 +9,4 @@ launch:
   - group:
       - node:
           pkg: "sinsei_umiusi_core"
-          exec: "robot_strategy.py"
+          exec: "low_power_health_check.py"
