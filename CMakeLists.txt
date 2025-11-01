@@ -37,6 +37,14 @@ ament_auto_find_build_dependencies()
 
 # ament_auto_add_executable(...)
 
+ament_python_install_package(${PROJECT_NAME})
+
+install(PROGRAMS
+src/${PROJECT_NAME}/low_power_health_check/low_power_health_check
+  src/${PROJECT_NAME}/low_power_health_check/low_power_health_check.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
@@ -56,6 +64,7 @@ endif()
 ament_auto_package(
   USE_SCOPED_HEADER_INSTALL_DIR
   INSTALL_TO_SHARE
+  launch
 )
 
 # ! 以下、後ろの方に書かないと無限ループに陥るので注意

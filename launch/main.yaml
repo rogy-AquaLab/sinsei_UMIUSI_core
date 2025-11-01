@@ -5,3 +5,8 @@ launch:
 
   - include:
       file: "$(var rosbridge_launch_file)"
+
+  - group:
+      - node:
+          pkg: "sinsei_umiusi_core"
+          exec: "low_power_health_check"

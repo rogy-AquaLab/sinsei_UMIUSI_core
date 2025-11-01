@@ -9,6 +9,22 @@
         "build",
         "--symlink-install",
       ]
+    },
+    {
+      "label": "ros2: launch",
+      "type": "shell",
+      "dependsOn": [
+        "colcon: build",
+      ],
+      "command": [
+        "source",
+        "${workspaceFolder}/install/setup.bash",
+        "&&",
+        "ros2",
+        "launch",
+        "sinsei_umiusi_core",
+        "main.yaml"
+      ],
     }
   ]
 }

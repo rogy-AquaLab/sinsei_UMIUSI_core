@@ -8,14 +8,15 @@
   <license>MIT</license>
 
   <buildtool_depend>ament_cmake_ros</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
 
   <build_depend>ament_cmake_auto</build_depend>
 
   <depend>rclcpp</depend>
+  <depend>rclpy</depend>
   <depend>behaviortree_cpp</depend>
 
   <test_depend>ament_lint_auto</test_depend>
-  <test_depend>ament_lint_common</test_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
