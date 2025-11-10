@@ -1,7 +1,6 @@
 name: ${PACKAGE_NAME}
 
 services:
-
   work:
     build:
       context: ./.docker
@@ -9,7 +8,7 @@ services:
       args:
         ros_distro: ${ROS_DISTRO}
     user: "${USER_ID}:${GROUP_ID}"
-    working_dir: /home/ubuntu/ros_ws
+    working_dir: /home/ubuntu/ros_ws/src/pkg
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - .:/home/ubuntu/ros_ws/src/pkg:rw
