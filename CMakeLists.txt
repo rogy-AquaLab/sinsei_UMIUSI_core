@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.20)
 project(sinsei_umiusi_core)
 
+# find dependencies
+find_package(ament_cmake_auto REQUIRED)
+ament_auto_find_build_dependencies()
+
 # default compiler flags
 add_compile_options(
   -Wall
@@ -29,18 +33,26 @@ endif()
 # for clang-tools
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# find dependencies
-find_package(ament_cmake_auto REQUIRED)
-ament_auto_find_build_dependencies()
+# Topic types
+rosidl_generate_interfaces(${PROJECT_NAME}_msgs
+  "msg/RobotState.msg"
+
+  LIBRARY_NAME
+    ${PROJECT_NAME}
+)
+ament_export_dependencies(rosidl_default_runtime)
+rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME}_msgs rosidl_typesupport_cpp)
 
 # ament_auto_add_library(...)
 
 # ament_auto_add_executable(...)
 
-ament_python_install_package(${PROJECT_NAME})
+# FIXME: Cannot use `ament_python_install_package` with `rosidl_generate_interfaces`.
+#        Leaving it commented until another solution is found.
+# ament_python_install_package(${PROJECT_NAME})
 
 install(PROGRAMS
-src/${PROJECT_NAME}/low_power_health_check/low_power_health_check
+  src/${PROJECT_NAME}/low_power_health_check/low_power_health_check
   src/${PROJECT_NAME}/low_power_health_check/low_power_health_check.py
   DESTINATION lib/${PROJECT_NAME}
 )
