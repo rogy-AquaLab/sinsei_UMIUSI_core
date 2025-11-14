@@ -35,7 +35,13 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Topic types
 rosidl_generate_interfaces(${PROJECT_NAME}_msgs
+  "msg/EscHealth.msg"
+  "msg/HealthCheckResult.msg"
+  "msg/HighPowerHealthCheckInfo.msg"
+  "msg/LowPowerHealthCheckInfo.msg"
   "msg/RobotState.msg"
+  "msg/Target.msg"
+  "msg/ValueWithHealth.msg"
 
   LIBRARY_NAME
     ${PROJECT_NAME}
