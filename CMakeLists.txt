@@ -41,7 +41,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 ament_python_install_package(${PROJECT_NAME})
 
 install(PROGRAMS
-  # src/${PROJECT_NAME}/low_power_health_check/low_power_health_check
   src/${PROJECT_NAME}/low_power_health_check/low_power_health_check.py
   RENAME      low_power_health_check
   PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
