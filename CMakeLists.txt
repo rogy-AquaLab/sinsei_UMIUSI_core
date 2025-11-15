@@ -33,33 +33,17 @@ endif()
 # for clang-tools
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Topic types
-rosidl_generate_interfaces(${PROJECT_NAME}_msgs
-  "msg/EscHealth.msg"
-  "msg/HealthCheckResult.msg"
-  "msg/HighPowerHealthCheckInfo.msg"
-  "msg/LowPowerHealthCheckInfo.msg"
-  "msg/RobotState.msg"
-  "msg/Target.msg"
-  "msg/ValueWithHealth.msg"
-
-  LIBRARY_NAME
-    ${PROJECT_NAME}
-)
-ament_export_dependencies(rosidl_default_runtime)
-rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME}_msgs rosidl_typesupport_cpp)
-
 # ament_auto_add_library(...)
 
 # ament_auto_add_executable(...)
 
-# FIXME: Cannot use `ament_python_install_package` with `rosidl_generate_interfaces`.
-#        Leaving it commented until another solution is found.
-# ament_python_install_package(${PROJECT_NAME})
+# Install itself as a python package
+ament_python_install_package(${PROJECT_NAME})
 
 install(PROGRAMS
-  src/${PROJECT_NAME}/low_power_health_check/low_power_health_check
   src/${PROJECT_NAME}/low_power_health_check/low_power_health_check.py
+  RENAME      low_power_health_check
+  PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
   DESTINATION lib/${PROJECT_NAME}
 )
 
