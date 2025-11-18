@@ -6,16 +6,17 @@ import rclpy
 from rclpy.node import Node, Publisher, Subscription
 from rclpy.timer import Timer
 from rclpy.qos import qos_profile_default as QOS_PROFILE_DEFAULT
+
 from sinsei_umiusi_msgs.msg import LowPowerCircuitInfo, HealthCheckResult
 
 
 def health_check_low_power_circuit(info: LowPowerCircuitInfo) -> HealthCheckResult:
     result: HealthCheckResult = HealthCheckResult()
-    result._is_ok = (
-        info._can == LowPowerCircuitInfo.OK
-        and info._headlights == LowPowerCircuitInfo.OK
-        and info._imu == LowPowerCircuitInfo.OK
-        and info._indicator_led == LowPowerCircuitInfo.OK
+    result.is_ok = (
+        info.can == LowPowerCircuitInfo.OK
+        and info.headlights == LowPowerCircuitInfo.OK
+        and info.imu == LowPowerCircuitInfo.OK
+        and info.indicator_led == LowPowerCircuitInfo.OK
     )
     return result
 
@@ -40,7 +41,7 @@ class LowPowerHealthCheck(Node):
 
     def _timer_callback(self) -> None:
         if not self._health_check_info_updated:
-            self.get_logger().warn('Low power circuit info is not updated')
+            self.get_logger().warning('Low power circuit info is not updated')
         self._health_check_info_updated = False
 
     def _low_power_circuit_info_callback(self, msg: LowPowerCircuitInfo) -> None:
@@ -49,7 +50,7 @@ class LowPowerHealthCheck(Node):
         self._health_check_info_updated = True
 
 
-def main(args=sys.argv) -> None:
+def main(args: list[str] = sys.argv) -> None:
     rclpy.init(args=args)
     node = LowPowerHealthCheck()
     rclpy.spin(node)
