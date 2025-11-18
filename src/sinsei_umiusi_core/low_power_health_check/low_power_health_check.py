@@ -11,11 +11,11 @@ from sinsei_umiusi_msgs.msg import LowPowerCircuitInfo, HealthCheckResult
 
 def health_check_low_power_circuit(info: LowPowerCircuitInfo) -> HealthCheckResult:
     result: HealthCheckResult = HealthCheckResult()
-    result._is_ok = (
-        info._can == LowPowerCircuitInfo.OK
-        and info._headlights == LowPowerCircuitInfo.OK
-        and info._imu == LowPowerCircuitInfo.OK
-        and info._indicator_led == LowPowerCircuitInfo.OK
+    result.is_ok = (
+        info.can == LowPowerCircuitInfo.OK
+        and info.headlights == LowPowerCircuitInfo.OK
+        and info.imu == LowPowerCircuitInfo.OK
+        and info.indicator_led == LowPowerCircuitInfo.OK
     )
     return result
 
@@ -49,7 +49,7 @@ class LowPowerHealthCheck(Node):
         self._health_check_info_updated = True
 
 
-def main(args=sys.argv) -> None:
+def main(args: list[str] = sys.argv) -> None:
     rclpy.init(args=args)
     node = LowPowerHealthCheck()
     rclpy.spin(node)
