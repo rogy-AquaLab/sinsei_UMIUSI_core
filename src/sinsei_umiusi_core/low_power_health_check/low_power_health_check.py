@@ -40,7 +40,7 @@ class LowPowerHealthCheck(Node):
 
     def _timer_callback(self) -> None:
         if not self._health_check_info_updated:
-            self.get_logger().warn('Low power circuit info is not updated')
+            self.get_logger().warning('Low power circuit info is not updated')
         self._health_check_info_updated = False
 
     def _low_power_circuit_info_callback(self, msg: LowPowerCircuitInfo) -> None:
