@@ -46,6 +46,12 @@ install(PROGRAMS
   PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
   DESTINATION lib/${PROJECT_NAME}
 )
+install(PROGRAMS
+  src/${PROJECT_NAME}/auto_target_generator/auto_target_generator.py
+  RENAME      auto_target_generator
+  PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
