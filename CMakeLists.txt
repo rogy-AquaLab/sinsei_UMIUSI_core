@@ -47,6 +47,13 @@ install(PROGRAMS
   DESTINATION lib/${PROJECT_NAME}
 )
 
+install(PROGRAMS
+  src/${PROJECT_NAME}/manual_target_generator/manual_target_generator.py
+  RENAME      manual_target_generator
+  PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
