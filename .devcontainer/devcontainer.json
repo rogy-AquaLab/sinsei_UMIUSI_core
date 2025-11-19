@@ -27,10 +27,15 @@
         "[python]": {
           "editor.defaultFormatter": "charliermarsh.ruff"
         },
+        "python.analysis.generateWithTypeAnnotation": true,
         "python.analysis.inlayHints.callArgumentNames": "partial",
         "python.analysis.inlayHints.functionReturnTypes": true,
         "python.analysis.inlayHints.variableTypes": true,
         "python.analysis.inlayHints.pytestParameters": true,
+        "python.analysis.typeCheckingMode": "strict",
+        "python.analysis.diagnosticSeverityOverrides": {
+          "reportUnknownMemberType": "none" // Due to ROS2 implementation; some classes have members with partially unknown types.
+        },
         "[cpp]": {
           "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
         },
