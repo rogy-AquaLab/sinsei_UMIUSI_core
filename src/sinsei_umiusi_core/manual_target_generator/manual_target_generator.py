@@ -3,63 +3,62 @@
 import sys
 
 import rclpy
-from rclpy.lifecycle import Node, Publisher, TransitionCallbackReturn
-from rclpy.subscription import Subscription
+from rclpy.node import Publisher, Subscription
 from rclpy.timer import Timer
+from rclpy.lifecycle import LifecycleNode, LifecycleState, TransitionCallbackReturn
 from rclpy.qos import qos_profile_default as QOS_PROFILE_DEFAULT
+
 from sinsei_umiusi_msgs.msg import Target
 
 
-class ManualTargetGenerator(Node):
+class ManualTargetGenerator(LifecycleNode):
+    """
+    # Manual Target Generator Node
+
+    Passes target velocity and orientation received from UI
+    """
+
     def __init__(self) -> None:
         super().__init__('manual_target_generator')
+
+    def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
         self._target_updated: bool = False
 
-        self._timer = None
-        self._target_pub = None
-        self._target_sub = None
-
-    def on_configure(self) -> TransitionCallbackReturn:
-        self.get_logger().info('Configuring ManualTargetGenerator...')
-        return TransitionCallbackReturn.SUCCESS
-
-    def on_activate(self, state) -> TransitionCallbackReturn:
-        self.get_logger().info('Activating ManualTargetGenerator...')
-
-        self._timer: Timer = self.create_timer(1.0, self._timer_callback)
-        self._target_sub: Subscription = self.create_subscription(
-            Target,
-            '/user_input/target',
-            self._target_callback,
-            QOS_PROFILE_DEFAULT,
+        self._timer: Timer = self.create_timer(
+            0.1,
+            self._timer_callback,
+            autostart=False,
         )
         self._target_pub: Publisher = self.create_publisher(
             Target,
             '/cmd/target',
             QOS_PROFILE_DEFAULT,
         )
+        self._target_sub: Subscription = None
 
         return TransitionCallbackReturn.SUCCESS
 
-    def on_deactivate(self, state) -> TransitionCallbackReturn:
-        self.get_logger().info('Deactivating ManualTargetGenerator...')
-
-        self.destroy_timer(self._timer)
-        self.destroy_subscription(self._target_sub)
-        self.destroy_publisher(self._target_pub)
-
-        self._timer = None
-        self._target_sub = None
-        self._target_pub = None
-
+    def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self._timer.reset()
+        self._target_sub: Subscription = self.create_subscription(
+            Target,
+            '/user_input/target',
+            self._target_callback,
+            QOS_PROFILE_DEFAULT,
+        )
         return TransitionCallbackReturn.SUCCESS
 
-    def on_cleanup(self, state) -> TransitionCallbackReturn:
-        self.get_logger().info('Cleaning up ManualTargetGenerator...')
+    def on_deactivate(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self._timer.cancel()
+        if not self.destroy_subscription(self._target_sub):
+            self.get_logger().warning('Failed to destroy subscription')
         return TransitionCallbackReturn.SUCCESS
 
-    def on_shutdown(self, state) -> TransitionCallbackReturn:
-        self.get_logger().info('Shutting down ManualTargetGenerator...')
+    def on_cleanup(self, state: LifecycleState) -> TransitionCallbackReturn:
+        if not self.destroy_timer(self._timer):
+            self.get_logger().warning('Failed to destroy timer')
+        if not self.destroy_publisher(self._target_pub):
+            self.get_logger().warning('Failed to destroy publisher')
         return TransitionCallbackReturn.SUCCESS
 
     def _timer_callback(self) -> None:
