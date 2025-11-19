@@ -35,7 +35,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # ament_auto_add_library(...)
 
-# ament_auto_add_executable(...)
+ament_auto_add_executable(robot_state
+  src/sinsei_umiusi_core/robot_state/main.cpp
+  src/sinsei_umiusi_core/robot_state/robot_state.cpp
+)
 
 # Install itself as a python package
 ament_python_install_package(${PROJECT_NAME})
@@ -79,6 +82,7 @@ ament_auto_package(
   USE_SCOPED_HEADER_INSTALL_DIR
   INSTALL_TO_SHARE
   launch
+  behavior_tree
 )
 
 # ! 以下、後ろの方に書かないと無限ループに陥るので注意

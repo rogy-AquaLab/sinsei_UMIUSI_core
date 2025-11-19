@@ -1,0 +1,6 @@
+<!-- The file name prefix `tree_` is to avoid tab completion conflicts with launch files -->
+
+<root BTCPP_format="4">
+  <BehaviorTree ID="Main">
+  </BehaviorTree>
+</root>
