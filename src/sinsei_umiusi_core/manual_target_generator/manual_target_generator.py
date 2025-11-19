@@ -63,7 +63,7 @@ class ManualTargetGenerator(LifecycleNode):
 
     def _timer_callback(self) -> None:
         if not self._target_updated:
-            self.get_logger().warn('Target is not updated')
+            self.get_logger().warning('Target is not updated')
         self._target_updated = False
 
     def _target_callback(self, msg: Target) -> None:
