@@ -71,7 +71,7 @@ class ManualTargetGenerator(LifecycleNode):
         self._target_updated = True
 
 
-def main(args=sys.argv) -> None:
+def main(args: list[str] = sys.argv) -> None:
     rclpy.init(args=args)
     node = ManualTargetGenerator()
     rclpy.spin(node)
