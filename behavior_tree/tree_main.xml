@@ -1,17 +1,22 @@
-<!-- The file name prefix `tree_` is to avoid tab completion conflicts with launch files -->
-
+<?xml version="1.0" encoding="UTF-8"?>
 <root BTCPP_format="4">
   <BehaviorTree ID="Main">
-    <!--
-    <NodeType
-      local_port_name="{root_blackboard_key}"
-      ...
-    /> -->
-    <KeepRunningUntilFailure>
-      <Sequence>
-        <PowerOff />
-        <Standby />
-      </Sequence>
-    </KeepRunningUntilFailure>
+    <Sequence>
+      <PowerOff />
+      <KeepRunningUntilFailure>
+        <Sequence>
+          <Standby />
+        </Sequence>
+      </KeepRunningUntilFailure>
+    </Sequence>
   </BehaviorTree>
+
+  <!-- Description of Node Models (used by Groot) -->
+  <TreeNodesModel>
+    <Action ID="PowerOff"
+      editable="true" />
+    <Action ID="Standby"
+      editable="true" />
+  </TreeNodesModel>
+
 </root>
