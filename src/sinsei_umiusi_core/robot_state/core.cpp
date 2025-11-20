@@ -39,10 +39,9 @@ sinsei_umiusi_core::robot_state::Core::Core()
         this->tree = std::make_unique<BT::Tree>(std::move(tree));
     }
 
-    this->change_state_manual_target_generator =
-      this->create_client<lifecycle_msgs::srv::ChangeState>(
-        "/manual_target_generator/change_state");
-    this->change_state_auto_target_generator =
+    this->change_state_manual_clt = this->create_client<lifecycle_msgs::srv::ChangeState>(
+      "/manual_target_generator/change_state");
+    this->change_state_auto_clt =
       this->create_client<lifecycle_msgs::srv::ChangeState>("/auto_target_generator/change_state");
     {
         // Request to configure managed nodes
@@ -50,13 +49,13 @@ sinsei_umiusi_core::robot_state::Core::Core()
         req->set__transition(lifecycle_msgs::msg::Transition{}.set__id(
           lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE));
 
-        this->change_state_manual_target_generator->wait_for_service();
-        this->change_state_auto_target_generator->wait_for_service();
-        // this->change_state_debug_thruster_output->wait_for_service();
+        this->change_state_manual_clt->wait_for_service();
+        this->change_state_auto_clt->wait_for_service();
+        // this->change_state_debug_clt->wait_for_service();
 
-        auto future_manual = this->change_state_manual_target_generator->async_send_request(req);
-        auto future_auto = this->change_state_auto_target_generator->async_send_request(req);
-        // auto future_debug = this->change_state_debug_thruster_output->async_send_request(req);
+        auto future_manual = this->change_state_manual_clt->async_send_request(req);
+        auto future_auto = this->change_state_auto_clt->async_send_request(req);
+        // auto future_debug = this->change_state_debug_clt->async_send_request(req);
 
         auto result_manual =
           rclcpp::spin_until_future_complete(this->get_node_base_interface(), future_manual);

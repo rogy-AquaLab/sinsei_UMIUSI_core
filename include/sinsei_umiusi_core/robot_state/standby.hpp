@@ -6,11 +6,24 @@
 
 #include <rclcpp/rclcpp.hpp>
 
+#include "sinsei_umiusi_msgs/msg/main_power_output.hpp"
+#include "sinsei_umiusi_msgs/msg/thruster_enabled_all.hpp"
+#include "sinsei_umiusi_msgs/srv/power_off.hpp"
+
 namespace sinsei_umiusi_core::robot_state
 {
 
 class Standby : public BT::StatefulActionNode
 {
+  private:
+    rclcpp::Node::SharedPtr ros_node;
+    rclcpp::Service<sinsei_umiusi_msgs::srv::PowerOff>::SharedPtr power_off_srv;
+    rclcpp::Publisher<sinsei_umiusi_msgs::msg::MainPowerOutput>::SharedPtr main_power_output_pub;
+    rclcpp::Publisher<sinsei_umiusi_msgs::msg::ThrusterEnabledAll>::SharedPtr
+      thruster_enabled_all_pub;
+
+    bool power_off_requested;
+
   public:
     Standby(const std::string & name, const BT::NodeConfiguration & config);
 

@@ -21,10 +21,9 @@ class Core : public rclcpp::Node
 
   private:
     rclcpp::TimerBase::SharedPtr timer;
-    rclcpp::Client<lifecycle_msgs::srv::ChangeState>::SharedPtr
-      change_state_manual_target_generator;
-    rclcpp::Client<lifecycle_msgs::srv::ChangeState>::SharedPtr change_state_auto_target_generator;
-    // rclcpp::Client<lifecycle_msgs::srv::ChangeState>::SharedPtr change_state_debug_thruster_output;
+    rclcpp::Client<lifecycle_msgs::srv::ChangeState>::SharedPtr change_state_manual_clt;
+    rclcpp::Client<lifecycle_msgs::srv::ChangeState>::SharedPtr change_state_auto_clt;
+    // rclcpp::Client<lifecycle_msgs::srv::ChangeState>::SharedPtr change_state_debug_clt;
 
     std::unique_ptr<BT::Tree> tree;
     std::optional<BT::Groot2Publisher> groot2_publisher;

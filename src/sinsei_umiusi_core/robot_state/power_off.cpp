@@ -36,9 +36,10 @@ sinsei_umiusi_core::robot_state::PowerOff::PowerOff(
             this->high_power_circuit_is_ok = msg->is_ok;
         });
     this->power_on_service = this->ros_node->create_service<sinsei_umiusi_msgs::srv::PowerOn>(
-      "/power_on", [this](
-                     const sinsei_umiusi_msgs::srv::PowerOn::Request::SharedPtr /* request */,
-                     sinsei_umiusi_msgs::srv::PowerOn::Response::SharedPtr response) {
+      "/user_input/power_on",
+      [this](
+        const sinsei_umiusi_msgs::srv::PowerOn::Request::SharedPtr /* request */,
+        sinsei_umiusi_msgs::srv::PowerOn::Response::SharedPtr response) {
           if (!this->low_power_circuit_is_ok) {
               response->set__success(false);
               response->set__error_msg("Low power circuit is not OK");
@@ -63,11 +64,11 @@ auto sinsei_umiusi_core::robot_state::PowerOff::onStart() -> BT::NodeStatus
 
 auto sinsei_umiusi_core::robot_state::PowerOff::onRunning() -> BT::NodeStatus
 {
-    if (!this->is_ready_to_power_on) {
-        rclcpp::spin_some(this->ros_node);
-        return BT::NodeStatus::RUNNING;
+    rclcpp::spin_some(this->ros_node);
+    if (this->is_ready_to_power_on) {
+        return BT::NodeStatus::SUCCESS;
     }
-    return BT::NodeStatus::SUCCESS;
+    return BT::NodeStatus::RUNNING;
 }
 
 auto sinsei_umiusi_core::robot_state::PowerOff::onHalted() -> void {}
