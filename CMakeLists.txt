@@ -36,9 +36,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # ament_auto_add_library(...)
 
 ament_auto_add_executable(robot_state
+  src/sinsei_umiusi_core/robot_state/core.cpp
   src/sinsei_umiusi_core/robot_state/main.cpp
-  src/sinsei_umiusi_core/robot_state/robot_state.cpp
   src/sinsei_umiusi_core/robot_state/power_off.cpp
+  src/sinsei_umiusi_core/robot_state/standby.cpp
 )
 
 # Install itself as a python package

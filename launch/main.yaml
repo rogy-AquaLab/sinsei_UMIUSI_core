@@ -19,6 +19,7 @@ launch:
       - node:
           pkg: "sinsei_umiusi_core"
           exec: "robot_state"
+          namespace: "robot_state"
           param:
             - name: behavior_tree_file
               value: "$(find-pkg-share sinsei_umiusi_core)/behavior_tree/tree_main.xml"

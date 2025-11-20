@@ -2,8 +2,16 @@
 
 <root BTCPP_format="4">
   <BehaviorTree ID="Main">
-    <Sequence name="Root">
-      <PowerOff />
-    </Sequence>
+    <!--
+    <NodeType
+      local_port_name="{root_blackboard_key}"
+      ...
+    /> -->
+    <KeepRunningUntilFailure>
+      <Sequence>
+        <PowerOff />
+        <Standby />
+      </Sequence>
+    </KeepRunningUntilFailure>
   </BehaviorTree>
 </root>
