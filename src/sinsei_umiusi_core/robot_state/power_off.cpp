@@ -6,69 +6,55 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/utilities.hpp>
 
-#include "sinsei_umiusi_msgs/msg/health_check_result.hpp"
-#include "sinsei_umiusi_msgs/srv/power_on.hpp"
+#include "sinsei_umiusi_msgs/msg/thruster_enabled_all.hpp"
 
 using namespace std::placeholders;
 
 sinsei_umiusi_core::robot_state::PowerOff::PowerOff(
   const std::string & name, const BT::NodeConfiguration & config)
 : BT::StatefulActionNode(name, config),
-  ros_node(nullptr),
-  low_power_health_check_result_sub(nullptr),
-  high_power_health_check_result_sub(nullptr),
-  power_on_service(nullptr),
-  low_power_circuit_is_ok(false),
-  high_power_circuit_is_ok(false),
-  is_ready_to_power_on(false)
+  ros_node{nullptr},
+  main_power_output_pub{nullptr},
+  thruster_enabled_pub{nullptr},
+  main_power_disabled_msg{sinsei_umiusi_msgs::msg::MainPowerOutput{}.set__enabled(false)},
+  thrusters_disabled_msg{
+    sinsei_umiusi_msgs::msg::ThrusterEnabledAll{}
+      .set__lf(sinsei_umiusi_msgs::msg::ThrusterEnabled{}.set__esc(false).set__servo(false))
+      .set__lb(sinsei_umiusi_msgs::msg::ThrusterEnabled{}.set__esc(false).set__servo(false))
+      .set__rf(sinsei_umiusi_msgs::msg::ThrusterEnabled{}.set__esc(false).set__servo(false))
+      .set__rb(sinsei_umiusi_msgs::msg::ThrusterEnabled{}.set__esc(false).set__servo(false))}
 {
     this->ros_node = rclcpp::Node::make_shared("_bt_power_off");
-    this->low_power_health_check_result_sub =
-      this->ros_node->create_subscription<sinsei_umiusi_msgs::msg::HealthCheckResult>(
-        "/low_power_health_check_result", rclcpp::SystemDefaultsQoS{},
-        [this](const sinsei_umiusi_msgs::msg::HealthCheckResult::SharedPtr msg) {
-            this->low_power_circuit_is_ok = msg->is_ok;
-        });
-    this->high_power_health_check_result_sub =
-      this->ros_node->create_subscription<sinsei_umiusi_msgs::msg::HealthCheckResult>(
-        "/high_power_health_check_result", rclcpp::SystemDefaultsQoS{},
-        [this](const sinsei_umiusi_msgs::msg::HealthCheckResult::SharedPtr msg) {
-            this->high_power_circuit_is_ok = msg->is_ok;
-        });
-    this->power_on_service = this->ros_node->create_service<sinsei_umiusi_msgs::srv::PowerOn>(
-      "/user_input/power_on",
-      [this](
-        const sinsei_umiusi_msgs::srv::PowerOn::Request::SharedPtr /* request */,
-        sinsei_umiusi_msgs::srv::PowerOn::Response::SharedPtr response) {
-          if (!this->low_power_circuit_is_ok) {
-              response->set__success(false);
-              response->set__error_msg("Low power circuit is not OK");
-              return;
-          }
-          if (!this->high_power_circuit_is_ok) {
-              response->set__success(false);
-              response->set__error_msg("High power circuit is not OK");
-              return;
-          }
-          this->is_ready_to_power_on = true;
-          response->set__success(true);
-          return;
-      });
+    this->main_power_output_pub =
+      this->ros_node->create_publisher<sinsei_umiusi_msgs::msg::MainPowerOutput>(
+        "/cmd/main_power_output", rclcpp::SystemDefaultsQoS{});
+    this->thruster_enabled_pub =
+      this->ros_node->create_publisher<sinsei_umiusi_msgs::msg::ThrusterEnabledAll>(
+        "/cmd/thruster_enabled_all", rclcpp::SystemDefaultsQoS{});
 }
 
 auto sinsei_umiusi_core::robot_state::PowerOff::onStart() -> BT::NodeStatus
 {
-    this->is_ready_to_power_on = false;
+    this->main_power_output_pub->publish(this->main_power_disabled_msg);
+    this->thruster_enabled_pub->publish(this->thrusters_disabled_msg);
     return BT::NodeStatus::RUNNING;
 }
 
 auto sinsei_umiusi_core::robot_state::PowerOff::onRunning() -> BT::NodeStatus
 {
-    rclcpp::spin_some(this->ros_node);
-    if (this->is_ready_to_power_on) {
-        return BT::NodeStatus::SUCCESS;
-    }
+    this->main_power_output_pub->publish(this->main_power_disabled_msg);
+    this->thruster_enabled_pub->publish(this->thrusters_disabled_msg);
     return BT::NodeStatus::RUNNING;
 }
 
-auto sinsei_umiusi_core::robot_state::PowerOff::onHalted() -> void {}
+auto sinsei_umiusi_core::robot_state::PowerOff::onHalted() -> void
+{
+    this->main_power_output_pub->publish(
+      sinsei_umiusi_msgs::msg::MainPowerOutput{}.set__enabled(true));
+    this->thruster_enabled_pub->publish(
+      sinsei_umiusi_msgs::msg::ThrusterEnabledAll{}
+        .set__lf(sinsei_umiusi_msgs::msg::ThrusterEnabled{}.set__esc(true).set__servo(true))
+        .set__lb(sinsei_umiusi_msgs::msg::ThrusterEnabled{}.set__esc(true).set__servo(true))
+        .set__rf(sinsei_umiusi_msgs::msg::ThrusterEnabled{}.set__esc(true).set__servo(true))
+        .set__rb(sinsei_umiusi_msgs::msg::ThrusterEnabled{}.set__esc(true).set__servo(true)));
+}

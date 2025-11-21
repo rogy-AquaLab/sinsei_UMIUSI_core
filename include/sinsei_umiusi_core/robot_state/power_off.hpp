@@ -7,9 +7,8 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/service.hpp>
 
-#include "sinsei_umiusi_msgs/msg/health_check_result.hpp"
-#include "sinsei_umiusi_msgs/msg/robot_state.hpp"
-#include "sinsei_umiusi_msgs/srv/power_on.hpp"
+#include "sinsei_umiusi_msgs/msg/main_power_output.hpp"
+#include "sinsei_umiusi_msgs/msg/thruster_enabled_all.hpp"
 
 namespace sinsei_umiusi_core::robot_state
 {
@@ -18,15 +17,11 @@ class PowerOff : public BT::StatefulActionNode
 {
   private:
     rclcpp::Node::SharedPtr ros_node;
-    rclcpp::Subscription<sinsei_umiusi_msgs::msg::HealthCheckResult>::SharedPtr
-      low_power_health_check_result_sub;
-    rclcpp::Subscription<sinsei_umiusi_msgs::msg::HealthCheckResult>::SharedPtr
-      high_power_health_check_result_sub;
-    rclcpp::Service<sinsei_umiusi_msgs::srv::PowerOn>::SharedPtr power_on_service;
+    rclcpp::Publisher<sinsei_umiusi_msgs::msg::MainPowerOutput>::SharedPtr main_power_output_pub;
+    rclcpp::Publisher<sinsei_umiusi_msgs::msg::ThrusterEnabledAll>::SharedPtr thruster_enabled_pub;
 
-    bool low_power_circuit_is_ok;
-    bool high_power_circuit_is_ok;
-    bool is_ready_to_power_on;
+    const sinsei_umiusi_msgs::msg::MainPowerOutput main_power_disabled_msg;
+    const sinsei_umiusi_msgs::msg::ThrusterEnabledAll thrusters_disabled_msg;
 
   public:
     PowerOff(const std::string & name, const BT::NodeConfiguration & config);

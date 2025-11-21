@@ -1,22 +1,48 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <root BTCPP_format="4">
   <BehaviorTree ID="Main">
-    <Sequence>
+    <WhileDoElse>
+      <Inverter>
+        <IsPowerOn />
+      </Inverter>
       <PowerOff />
-      <KeepRunningUntilFailure>
-        <Sequence>
-          <Standby mode="{mode}" />
-          <Running mode="{mode}" />
-        </Sequence>
-      </KeepRunningUntilFailure>
-    </Sequence>
+      <ReactiveSequence>
+        <ModeControl mode="{mode}" />
+        <WhileDoElse>
+          <ModeMatch mode="{mode}" match_to="0" />
+          <Standby />
+          <WhileDoElse>
+            <ModeMatch mode="{mode}" match_to="1" />
+            <Manual />
+            <WhileDoElse>
+              <ModeMatch mode="{mode}" match_to="2" />
+              <Auto />
+              <WhileDoElse>
+                <ModeMatch mode="{mode}" match_to="3" />
+                <Debug />
+              </WhileDoElse>
+            </WhileDoElse>
+          </WhileDoElse>
+        </WhileDoElse>
+      </ReactiveSequence>
+    </WhileDoElse>
   </BehaviorTree>
 
   <!-- Description of Node Models (used by Groot) -->
   <TreeNodesModel>
+    <Condition ID="IsPowerOn"
+      editable="true" />
+    <Action ID="ModeControl"
+      editable="true" />
     <Action ID="PowerOff"
       editable="true" />
     <Action ID="Standby"
+      editable="true" />
+    <Action ID="Manual"
+      editable="true" />
+    <Action ID="Auto"
+      editable="true" />
+    <Action ID="Debug"
       editable="true" />
   </TreeNodesModel>
 

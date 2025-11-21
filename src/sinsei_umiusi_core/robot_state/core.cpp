@@ -14,8 +14,13 @@
 #include <rclcpp/rclcpp.hpp>
 #include <string>
 
+#include "sinsei_umiusi_core/robot_state/auto.hpp"
+#include "sinsei_umiusi_core/robot_state/debug.hpp"
+#include "sinsei_umiusi_core/robot_state/is_power_on.hpp"
+#include "sinsei_umiusi_core/robot_state/manual.hpp"
+#include "sinsei_umiusi_core/robot_state/mode_control.hpp"
+#include "sinsei_umiusi_core/robot_state/mode_match.hpp"
 #include "sinsei_umiusi_core/robot_state/power_off.hpp"
-#include "sinsei_umiusi_core/robot_state/running.hpp"
 #include "sinsei_umiusi_core/robot_state/standby.hpp"
 
 using namespace std::chrono_literals;
@@ -32,9 +37,14 @@ sinsei_umiusi_core::robot_state::Core::Core()
 
     {
         auto factory = BT::BehaviorTreeFactory();
+        factory.registerNodeType<sinsei_umiusi_core::robot_state::IsPowerOn>("IsPowerOn");
         factory.registerNodeType<sinsei_umiusi_core::robot_state::PowerOff>("PowerOff");
+        factory.registerNodeType<sinsei_umiusi_core::robot_state::ModeControl>("ModeControl");
+        factory.registerNodeType<sinsei_umiusi_core::robot_state::ModeMatch>("ModeMatch");
         factory.registerNodeType<sinsei_umiusi_core::robot_state::Standby>("Standby");
-        factory.registerNodeType<sinsei_umiusi_core::robot_state::Running>("Running");
+        factory.registerNodeType<sinsei_umiusi_core::robot_state::Manual>("Manual");
+        factory.registerNodeType<sinsei_umiusi_core::robot_state::Auto>("Auto");
+        factory.registerNodeType<sinsei_umiusi_core::robot_state::Debug>("Debug");
         auto tree = factory.createTreeFromFile(
           this->get_parameter(std::string(PARAM_NAME_BEHAVIOR_TREE_FILE)).as_string());
         this->groot2_publisher.emplace(tree, 1667);
