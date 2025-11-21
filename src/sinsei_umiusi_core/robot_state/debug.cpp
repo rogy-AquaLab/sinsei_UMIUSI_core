@@ -5,7 +5,7 @@ sinsei_umiusi_core::robot_state::Debug::Debug(
   const std::string & name, const BT::NodeConfiguration & config)
 : BT::StatefulActionNode(name, config), ros_node(nullptr), change_state_thruster_output_clt(nullptr)
 {
-    this->ros_node = rclcpp::Node::make_shared("debug_thruster_output");
+    this->ros_node = rclcpp::Node::make_shared("_bt_output");
     this->change_state_thruster_output_clt =
       this->ros_node->create_client<lifecycle_msgs::srv::ChangeState>(
         "/debug_thruster_output/change_state");
