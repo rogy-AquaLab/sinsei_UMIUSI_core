@@ -5,7 +5,8 @@
       <PowerOff />
       <KeepRunningUntilFailure>
         <Sequence>
-          <Standby />
+          <Standby mode="{mode}" />
+          <Running mode="{mode}" />
         </Sequence>
       </KeepRunningUntilFailure>
     </Sequence>

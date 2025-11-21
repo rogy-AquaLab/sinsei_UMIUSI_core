@@ -40,6 +40,7 @@ ament_auto_add_executable(robot_state
   src/sinsei_umiusi_core/robot_state/main.cpp
   src/sinsei_umiusi_core/robot_state/power_off.cpp
   src/sinsei_umiusi_core/robot_state/standby.cpp
+  src/sinsei_umiusi_core/robot_state/running.cpp
 )
 
 # Install itself as a python package
