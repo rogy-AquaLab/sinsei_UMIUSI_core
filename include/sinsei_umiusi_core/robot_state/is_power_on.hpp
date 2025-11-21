@@ -5,6 +5,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 
+#include "sinsei_umiusi_msgs/msg/health_check_result.hpp"
 #include "sinsei_umiusi_msgs/srv/power_off.hpp"
 #include "sinsei_umiusi_msgs/srv/power_on.hpp"
 
@@ -17,7 +18,13 @@ class IsPowerOn : public BT::ConditionNode
     rclcpp::Node::SharedPtr ros_node;
     rclcpp::Service<sinsei_umiusi_msgs::srv::PowerOff>::SharedPtr power_off_srv;
     rclcpp::Service<sinsei_umiusi_msgs::srv::PowerOn>::SharedPtr power_on_srv;
+    rclcpp::Subscription<sinsei_umiusi_msgs::msg::HealthCheckResult>::SharedPtr
+      low_power_health_check_sub;
+    rclcpp::Subscription<sinsei_umiusi_msgs::msg::HealthCheckResult>::SharedPtr
+      high_power_health_check_sub;
 
+    bool low_power_circuit_is_ok;
+    bool high_power_circuit_is_ok;
     bool is_power_on;
 
   public:
