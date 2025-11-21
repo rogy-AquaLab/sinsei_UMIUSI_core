@@ -2,10 +2,7 @@
 <root BTCPP_format="4">
   <BehaviorTree ID="Main">
     <WhileDoElse>
-      <Inverter>
-        <IsPowerOn />
-      </Inverter>
-      <PowerOff />
+      <IsPowerOn />
       <ReactiveSequence>
         <ModeControl mode="{mode}" />
         <WhileDoElse>
@@ -25,6 +22,7 @@
           </WhileDoElse>
         </WhileDoElse>
       </ReactiveSequence>
+      <PowerOff />
     </WhileDoElse>
   </BehaviorTree>
 
