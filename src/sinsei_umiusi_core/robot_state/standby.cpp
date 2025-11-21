@@ -2,7 +2,7 @@
 
 sinsei_umiusi_core::robot_state::Standby::Standby(
   const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config)
+: BT::StatefulActionNode{name, config}
 {
 }
 

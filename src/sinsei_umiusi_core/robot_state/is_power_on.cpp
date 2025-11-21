@@ -4,13 +4,13 @@
 
 sinsei_umiusi_core::robot_state::IsPowerOn::IsPowerOn(
   const std::string & name, const BT::NodeConfiguration & config)
-: BT::ConditionNode(name, config),
-  ros_node(nullptr),
-  power_off_srv(nullptr),
-  power_on_srv(nullptr),
-  low_power_circuit_is_ok(false),
-  high_power_circuit_is_ok(false),
-  is_power_on(false)
+: BT::ConditionNode{name, config},
+  ros_node{nullptr},
+  power_off_srv{nullptr},
+  power_on_srv{nullptr},
+  low_power_circuit_is_ok{false},
+  high_power_circuit_is_ok{false},
+  is_power_on{false}
 {
     this->ros_node = rclcpp::Node::make_shared("_bt_is_power_on");
     this->low_power_health_check_sub =

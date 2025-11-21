@@ -2,7 +2,7 @@
 
 sinsei_umiusi_core::robot_state::ModeMatch::ModeMatch(
   const std::string & name, const BT::NodeConfiguration & config)
-: BT::ConditionNode(name, config), target_mode(sinsei_umiusi_msgs::srv::SetState::Request::STANDBY)
+: BT::ConditionNode{name, config}, target_mode{sinsei_umiusi_msgs::srv::SetState::Request::STANDBY}
 {
 }
 

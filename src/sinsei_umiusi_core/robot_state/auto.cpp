@@ -2,9 +2,9 @@
 
 sinsei_umiusi_core::robot_state::Auto::Auto(
   const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config),
-  ros_node(nullptr),
-  change_state_target_generator_clt(nullptr)
+: BT::StatefulActionNode{name, config},
+  ros_node{nullptr},
+  change_state_target_generator_clt{nullptr}
 {
     this->ros_node = rclcpp::Node::make_shared("_bt_auto");
     this->change_state_target_generator_clt =

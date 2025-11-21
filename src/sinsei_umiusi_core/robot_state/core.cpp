@@ -26,7 +26,7 @@
 using namespace std::chrono_literals;
 
 sinsei_umiusi_core::robot_state::Core::Core()
-: rclcpp::Node("core"), timer(nullptr), tree(nullptr), groot2_publisher(std::nullopt)
+: rclcpp::Node{"core"}, timer{nullptr}, tree{nullptr}, groot2_publisher{std::nullopt}
 {
     this->declare_parameter(
       std::string(PARAM_NAME_BEHAVIOR_TREE_FILE), "",

@@ -2,10 +2,10 @@
 
 sinsei_umiusi_core::robot_state::ModeControl::ModeControl(
   const std::string & name, const BT::NodeConfiguration & config)
-: BT::SyncActionNode(name, config),
-  ros_node(nullptr),
-  set_state_srv(nullptr),
-  current_mode(sinsei_umiusi_msgs::srv::SetState::Request::STANDBY)
+: BT::SyncActionNode{name, config},
+  ros_node{nullptr},
+  set_state_srv{nullptr},
+  current_mode{sinsei_umiusi_msgs::srv::SetState::Request::STANDBY}
 {
     this->ros_node = rclcpp::Node::make_shared("_bt_mode_control");
     this->set_state_srv = this->ros_node->create_service<sinsei_umiusi_msgs::srv::SetState>(
