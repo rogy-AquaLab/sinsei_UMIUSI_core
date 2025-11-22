@@ -35,7 +35,18 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # ament_auto_add_library(...)
 
-# ament_auto_add_executable(...)
+ament_auto_add_executable(robot_strategy
+  src/sinsei_umiusi_core/robot_strategy/auto.cpp
+  src/sinsei_umiusi_core/robot_strategy/core.cpp
+  src/sinsei_umiusi_core/robot_strategy/debug.cpp
+  src/sinsei_umiusi_core/robot_strategy/is_power_on.cpp
+  src/sinsei_umiusi_core/robot_strategy/main.cpp
+  src/sinsei_umiusi_core/robot_strategy/manual.cpp
+  src/sinsei_umiusi_core/robot_strategy/mode_control.cpp
+  src/sinsei_umiusi_core/robot_strategy/mode_match.cpp
+  src/sinsei_umiusi_core/robot_strategy/power_off.cpp
+  src/sinsei_umiusi_core/robot_strategy/standby.cpp
+)
 
 # Install itself as a python package
 ament_python_install_package(${PROJECT_NAME})
@@ -79,6 +90,7 @@ ament_auto_package(
   USE_SCOPED_HEADER_INSTALL_DIR
   INSTALL_TO_SHARE
   launch
+  behavior_tree
 )
 
 # ! 以下、後ろの方に書かないと無限ループに陥るので注意
