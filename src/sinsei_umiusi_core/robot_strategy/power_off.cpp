@@ -22,7 +22,9 @@ sinsei_umiusi_core::robot_strategy::PowerOff::PowerOff(
       .set__lf(sinsei_umiusi_msgs::msg::ThrusterEnabled{}.set__esc(false).set__servo(false))
       .set__lb(sinsei_umiusi_msgs::msg::ThrusterEnabled{}.set__esc(false).set__servo(false))
       .set__rf(sinsei_umiusi_msgs::msg::ThrusterEnabled{}.set__esc(false).set__servo(false))
-      .set__rb(sinsei_umiusi_msgs::msg::ThrusterEnabled{}.set__esc(false).set__servo(false))}
+      .set__rb(sinsei_umiusi_msgs::msg::ThrusterEnabled{}.set__esc(false).set__servo(false))},
+  robot_state_power_off_msg{sinsei_umiusi_msgs::msg::RobotState{}.set__state(
+    sinsei_umiusi_msgs::msg::RobotState::POWER_OFF)}
 {
     this->ros_node = rclcpp::Node::make_shared("_bt_power_off");
     this->main_power_output_pub =
@@ -31,6 +33,8 @@ sinsei_umiusi_core::robot_strategy::PowerOff::PowerOff(
     this->thruster_enabled_pub =
       this->ros_node->create_publisher<sinsei_umiusi_msgs::msg::ThrusterEnabledAll>(
         "/cmd/thruster_enabled_all", rclcpp::SystemDefaultsQoS{});
+    this->robot_state_pub = this->ros_node->create_publisher<sinsei_umiusi_msgs::msg::RobotState>(
+      "/robot_state", rclcpp::SystemDefaultsQoS{});
 }
 
 auto sinsei_umiusi_core::robot_strategy::PowerOff::onStart() -> BT::NodeStatus
@@ -42,8 +46,11 @@ auto sinsei_umiusi_core::robot_strategy::PowerOff::onStart() -> BT::NodeStatus
 
 auto sinsei_umiusi_core::robot_strategy::PowerOff::onRunning() -> BT::NodeStatus
 {
+    rclcpp::spin_some(this->ros_node);
+
     this->main_power_output_pub->publish(this->main_power_disabled_msg);
     this->thruster_enabled_pub->publish(this->thrusters_disabled_msg);
+    this->robot_state_pub->publish(this->robot_state_power_off_msg);
     return BT::NodeStatus::RUNNING;
 }
 

@@ -3,12 +3,18 @@
 #include "sinsei_umiusi_core/robot_strategy/debug.hpp"
 sinsei_umiusi_core::robot_strategy::Debug::Debug(
   const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode{name, config}, ros_node{nullptr}, change_state_thruster_output_clt{nullptr}
+: BT::StatefulActionNode{name, config},
+  ros_node{nullptr},
+  change_state_thruster_output_clt{nullptr},
+  robot_state_debug_msg{
+    sinsei_umiusi_msgs::msg::RobotState{}.set__state(sinsei_umiusi_msgs::msg::RobotState::DEBUG)}
 {
     this->ros_node = rclcpp::Node::make_shared("_bt_output");
     this->change_state_thruster_output_clt =
       this->ros_node->create_client<lifecycle_msgs::srv::ChangeState>(
         "/debug_thruster_output/change_state");
+    this->robot_state_pub = this->ros_node->create_publisher<sinsei_umiusi_msgs::msg::RobotState>(
+      "/robot_state", rclcpp::SystemDefaultsQoS{});
 }
 auto sinsei_umiusi_core::robot_strategy::Debug::onStart() -> BT::NodeStatus
 {
@@ -40,6 +46,8 @@ auto sinsei_umiusi_core::robot_strategy::Debug::onStart() -> BT::NodeStatus
 auto sinsei_umiusi_core::robot_strategy::Debug::onRunning() -> BT::NodeStatus
 {
     rclcpp::spin_some(this->ros_node);
+
+    this->robot_state_pub->publish(this->robot_state_debug_msg);
     return BT::NodeStatus::RUNNING;
 }
 auto sinsei_umiusi_core::robot_strategy::Debug::onHalted() -> void

@@ -4,12 +4,16 @@ sinsei_umiusi_core::robot_strategy::Manual::Manual(
   const std::string & name, const BT::NodeConfiguration & config)
 : BT::StatefulActionNode{name, config},
   ros_node{nullptr},
-  change_state_target_generator_clt{nullptr}
+  change_state_target_generator_clt{nullptr},
+  robot_state_manual_msg{
+    sinsei_umiusi_msgs::msg::RobotState{}.set__state(sinsei_umiusi_msgs::msg::RobotState::MANUAL)}
 {
     this->ros_node = rclcpp::Node::make_shared("_bt_manual");
     this->change_state_target_generator_clt =
       this->ros_node->create_client<lifecycle_msgs::srv::ChangeState>(
         "/manual_target_generator/change_state");
+    this->robot_state_pub = this->ros_node->create_publisher<sinsei_umiusi_msgs::msg::RobotState>(
+      "/robot_state", rclcpp::SystemDefaultsQoS{});
 }
 
 auto sinsei_umiusi_core::robot_strategy::Manual::onStart() -> BT::NodeStatus
@@ -43,6 +47,8 @@ auto sinsei_umiusi_core::robot_strategy::Manual::onStart() -> BT::NodeStatus
 auto sinsei_umiusi_core::robot_strategy::Manual::onRunning() -> BT::NodeStatus
 {
     rclcpp::spin_some(this->ros_node);
+
+    this->robot_state_pub->publish(this->robot_state_manual_msg);
     return BT::NodeStatus::RUNNING;
 }
 

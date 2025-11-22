@@ -6,11 +6,19 @@
 
 #include <rclcpp/rclcpp.hpp>
 
+#include "sinsei_umiusi_msgs/msg/robot_state.hpp"
+
 namespace sinsei_umiusi_core::robot_strategy
 {
 
 class Standby : public BT::StatefulActionNode
 {
+  private:
+    rclcpp::Node::SharedPtr ros_node;
+    rclcpp::Publisher<sinsei_umiusi_msgs::msg::RobotState>::SharedPtr robot_state_pub;
+
+    const sinsei_umiusi_msgs::msg::RobotState robot_state_standby_msg;
+
   public:
     Standby(const std::string & name, const BT::NodeConfiguration & config);
 
