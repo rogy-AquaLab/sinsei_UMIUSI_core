@@ -19,6 +19,7 @@
   <depend>sinsei_umiusi_msgs</depend>
 
   <build_depend>ament_cmake_auto</build_depend>
+  <build_depend>lifecycle_msgs</build_depend>
 
   <exec_depend>rosidl_default_runtime</exec_depend>
 
