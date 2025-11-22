@@ -35,17 +35,17 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # ament_auto_add_library(...)
 
-ament_auto_add_executable(robot_state
-  src/sinsei_umiusi_core/robot_state/auto.cpp
-  src/sinsei_umiusi_core/robot_state/core.cpp
-  src/sinsei_umiusi_core/robot_state/debug.cpp
-  src/sinsei_umiusi_core/robot_state/is_power_on.cpp
-  src/sinsei_umiusi_core/robot_state/main.cpp
-  src/sinsei_umiusi_core/robot_state/manual.cpp
-  src/sinsei_umiusi_core/robot_state/mode_control.cpp
-  src/sinsei_umiusi_core/robot_state/mode_match.cpp
-  src/sinsei_umiusi_core/robot_state/power_off.cpp
-  src/sinsei_umiusi_core/robot_state/standby.cpp
+ament_auto_add_executable(robot_strategy
+  src/sinsei_umiusi_core/robot_strategy/auto.cpp
+  src/sinsei_umiusi_core/robot_strategy/core.cpp
+  src/sinsei_umiusi_core/robot_strategy/debug.cpp
+  src/sinsei_umiusi_core/robot_strategy/is_power_on.cpp
+  src/sinsei_umiusi_core/robot_strategy/main.cpp
+  src/sinsei_umiusi_core/robot_strategy/manual.cpp
+  src/sinsei_umiusi_core/robot_strategy/mode_control.cpp
+  src/sinsei_umiusi_core/robot_strategy/mode_match.cpp
+  src/sinsei_umiusi_core/robot_strategy/power_off.cpp
+  src/sinsei_umiusi_core/robot_strategy/standby.cpp
 )
 
 # Install itself as a python package

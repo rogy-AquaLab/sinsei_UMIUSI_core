@@ -1,5 +1,5 @@
-#ifndef SINSEI_UMIUSI_CORE_ROBOT_STATE_MANUAL_HPP
-#define SINSEI_UMIUSI_CORE_ROBOT_STATE_MANUAL_HPP
+#ifndef SINSEI_UMIUSI_CORE_ROBOT_STATE_AUTO_HPP
+#define SINSEI_UMIUSI_CORE_ROBOT_STATE_AUTO_HPP
 
 #include <behaviortree_cpp/action_node.h>
 
@@ -7,17 +7,17 @@
 #include <rclcpp/node.hpp>
 #include <rclcpp/rclcpp.hpp>
 
-namespace sinsei_umiusi_core::robot_state
+namespace sinsei_umiusi_core::robot_strategy
 {
 
-class Manual : public BT::StatefulActionNode
+class Auto : public BT::StatefulActionNode
 {
   private:
     rclcpp::Node::SharedPtr ros_node;
     rclcpp::Client<lifecycle_msgs::srv::ChangeState>::SharedPtr change_state_target_generator_clt;
 
   public:
-    Manual(const std::string & name, const BT::NodeConfiguration & config);
+    Auto(const std::string & name, const BT::NodeConfiguration & config);
 
     static BT::PortsList providedPorts() { return {}; }
 
@@ -26,6 +26,6 @@ class Manual : public BT::StatefulActionNode
     auto onHalted() -> void override;
 };
 
-}  // namespace sinsei_umiusi_core::robot_state
+}  // namespace sinsei_umiusi_core::robot_strategy
 
-#endif  // SINSEI_UMIUSI_CORE_ROBOT_STATE_MANUAL_HPP
+#endif  // SINSEI_UMIUSI_CORE_ROBOT_STATE_AUTO_HPP

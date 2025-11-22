@@ -1,8 +1,8 @@
-#include "sinsei_umiusi_core/robot_state/is_power_on.hpp"
+#include "sinsei_umiusi_core/robot_strategy/is_power_on.hpp"
 
 #include <rclcpp/qos.hpp>
 
-sinsei_umiusi_core::robot_state::IsPowerOn::IsPowerOn(
+sinsei_umiusi_core::robot_strategy::IsPowerOn::IsPowerOn(
   const std::string & name, const BT::NodeConfiguration & config)
 : BT::ConditionNode{name, config},
   ros_node{nullptr},
@@ -55,7 +55,7 @@ sinsei_umiusi_core::robot_state::IsPowerOn::IsPowerOn(
       });
 }
 
-auto sinsei_umiusi_core::robot_state::IsPowerOn::tick() -> BT::NodeStatus
+auto sinsei_umiusi_core::robot_strategy::IsPowerOn::tick() -> BT::NodeStatus
 {
     rclcpp::spin_some(this->ros_node);
     return this->is_power_on ? BT::NodeStatus::SUCCESS : BT::NodeStatus::FAILURE;

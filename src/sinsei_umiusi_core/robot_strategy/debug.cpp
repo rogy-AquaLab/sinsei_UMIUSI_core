@@ -1,7 +1,7 @@
 // existing content
 
-#include "sinsei_umiusi_core/robot_state/debug.hpp"
-sinsei_umiusi_core::robot_state::Debug::Debug(
+#include "sinsei_umiusi_core/robot_strategy/debug.hpp"
+sinsei_umiusi_core::robot_strategy::Debug::Debug(
   const std::string & name, const BT::NodeConfiguration & config)
 : BT::StatefulActionNode{name, config}, ros_node{nullptr}, change_state_thruster_output_clt{nullptr}
 {
@@ -10,7 +10,7 @@ sinsei_umiusi_core::robot_state::Debug::Debug(
       this->ros_node->create_client<lifecycle_msgs::srv::ChangeState>(
         "/debug_thruster_output/change_state");
 }
-auto sinsei_umiusi_core::robot_state::Debug::onStart() -> BT::NodeStatus
+auto sinsei_umiusi_core::robot_strategy::Debug::onStart() -> BT::NodeStatus
 {
     // Request to activate debug target generator
     auto req = std::make_shared<lifecycle_msgs::srv::ChangeState::Request>();
@@ -37,12 +37,12 @@ auto sinsei_umiusi_core::robot_state::Debug::onStart() -> BT::NodeStatus
         return BT::NodeStatus::FAILURE;
     }
 }
-auto sinsei_umiusi_core::robot_state::Debug::onRunning() -> BT::NodeStatus
+auto sinsei_umiusi_core::robot_strategy::Debug::onRunning() -> BT::NodeStatus
 {
     rclcpp::spin_some(this->ros_node);
     return BT::NodeStatus::RUNNING;
 }
-auto sinsei_umiusi_core::robot_state::Debug::onHalted() -> void
+auto sinsei_umiusi_core::robot_strategy::Debug::onHalted() -> void
 {
     // Request to deactivate debug target generator
     auto req = std::make_shared<lifecycle_msgs::srv::ChangeState::Request>();

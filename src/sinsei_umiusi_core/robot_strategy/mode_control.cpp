@@ -1,6 +1,6 @@
-#include "sinsei_umiusi_core/robot_state/mode_control.hpp"
+#include "sinsei_umiusi_core/robot_strategy/mode_control.hpp"
 
-sinsei_umiusi_core::robot_state::ModeControl::ModeControl(
+sinsei_umiusi_core::robot_strategy::ModeControl::ModeControl(
   const std::string & name, const BT::NodeConfiguration & config)
 : BT::SyncActionNode{name, config},
   ros_node{nullptr},
@@ -30,7 +30,7 @@ sinsei_umiusi_core::robot_state::ModeControl::ModeControl(
       });
 }
 
-auto sinsei_umiusi_core::robot_state::ModeControl::tick() -> BT::NodeStatus
+auto sinsei_umiusi_core::robot_strategy::ModeControl::tick() -> BT::NodeStatus
 {
     rclcpp::spin_some(this->ros_node);
     this->setOutput("mode", this->current_mode);

@@ -7,7 +7,7 @@
 
 #include "sinsei_umiusi_msgs/srv/set_mode.hpp"
 
-namespace sinsei_umiusi_core::robot_state
+namespace sinsei_umiusi_core::robot_strategy
 {
 
 class ModeControl : public BT::SyncActionNode
@@ -39,6 +39,6 @@ class ModeControl : public BT::SyncActionNode
     auto tick() -> BT::NodeStatus override;
 };
 
-}  // namespace sinsei_umiusi_core::robot_state
+}  // namespace sinsei_umiusi_core::robot_strategy
 
 #endif  // SINSEI_UMIUSI_CORE_ROBOT_STATE_MODE_CONTROL_HPP

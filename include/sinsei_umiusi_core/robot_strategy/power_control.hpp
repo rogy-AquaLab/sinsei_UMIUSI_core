@@ -5,7 +5,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-namespace sinsei_umiusi_core::robot_state
+namespace sinsei_umiusi_core::robot_strategy
 {
 
 class PowerControl : public BT::StatefulActionNode
@@ -23,6 +23,6 @@ class PowerControl : public BT::StatefulActionNode
     auto onHalted() -> void override;
 };
 
-}  // namespace sinsei_umiusi_core::robot_state
+}  // namespace sinsei_umiusi_core::robot_strategy
 
 #endif  // SINSEI_UMIUSI_CORE_ROBOT_STATE_POWER_CONTROL_HPP

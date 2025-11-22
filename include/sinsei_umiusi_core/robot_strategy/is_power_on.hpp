@@ -9,7 +9,7 @@
 #include "sinsei_umiusi_msgs/srv/power_off.hpp"
 #include "sinsei_umiusi_msgs/srv/power_on.hpp"
 
-namespace sinsei_umiusi_core::robot_state
+namespace sinsei_umiusi_core::robot_strategy
 {
 
 class IsPowerOn : public BT::ConditionNode
@@ -35,6 +35,6 @@ class IsPowerOn : public BT::ConditionNode
     auto tick() -> BT::NodeStatus override;
 };
 
-}  // namespace sinsei_umiusi_core::robot_state
+}  // namespace sinsei_umiusi_core::robot_strategy
 
 #endif  // SINSEI_UMIUSI_CORE_ROBOT_STATE_POWER_CONTROL_HPP

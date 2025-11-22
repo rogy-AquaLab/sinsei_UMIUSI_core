@@ -10,7 +10,7 @@
 #include "sinsei_umiusi_msgs/msg/main_power_output.hpp"
 #include "sinsei_umiusi_msgs/msg/thruster_enabled_all.hpp"
 
-namespace sinsei_umiusi_core::robot_state
+namespace sinsei_umiusi_core::robot_strategy
 {
 
 class PowerOff : public BT::StatefulActionNode
@@ -33,6 +33,6 @@ class PowerOff : public BT::StatefulActionNode
     auto onHalted() -> void override;
 };
 
-}  // namespace sinsei_umiusi_core::robot_state
+}  // namespace sinsei_umiusi_core::robot_strategy
 
 #endif  // SINSEI_UMIUSI_CORE_ROBOT_STATE_POWER_OFF_HPP

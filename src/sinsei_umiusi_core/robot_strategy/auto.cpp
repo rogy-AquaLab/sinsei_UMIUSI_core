@@ -1,6 +1,6 @@
-#include "sinsei_umiusi_core/robot_state/auto.hpp"
+#include "sinsei_umiusi_core/robot_strategy/auto.hpp"
 
-sinsei_umiusi_core::robot_state::Auto::Auto(
+sinsei_umiusi_core::robot_strategy::Auto::Auto(
   const std::string & name, const BT::NodeConfiguration & config)
 : BT::StatefulActionNode{name, config},
   ros_node{nullptr},
@@ -12,7 +12,7 @@ sinsei_umiusi_core::robot_state::Auto::Auto(
         "/auto_target_generator/change_state");
 }
 
-auto sinsei_umiusi_core::robot_state::Auto::onStart() -> BT::NodeStatus
+auto sinsei_umiusi_core::robot_strategy::Auto::onStart() -> BT::NodeStatus
 {
     // Request to activate auto target generator
     auto req = std::make_shared<lifecycle_msgs::srv::ChangeState::Request>();
@@ -39,13 +39,13 @@ auto sinsei_umiusi_core::robot_state::Auto::onStart() -> BT::NodeStatus
     }
 }
 
-auto sinsei_umiusi_core::robot_state::Auto::onRunning() -> BT::NodeStatus
+auto sinsei_umiusi_core::robot_strategy::Auto::onRunning() -> BT::NodeStatus
 {
     rclcpp::spin_some(this->ros_node);
     return BT::NodeStatus::RUNNING;
 }
 
-auto sinsei_umiusi_core::robot_state::Auto::onHalted() -> void
+auto sinsei_umiusi_core::robot_strategy::Auto::onHalted() -> void
 {
     // Request to deactivate auto target generator
     auto req = std::make_shared<lifecycle_msgs::srv::ChangeState::Request>();

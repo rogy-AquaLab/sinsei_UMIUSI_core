@@ -11,7 +11,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <string_view>
 
-namespace sinsei_umiusi_core::robot_state
+namespace sinsei_umiusi_core::robot_strategy
 {
 
 class Core : public rclcpp::Node
@@ -35,6 +35,6 @@ class Core : public rclcpp::Node
     ~Core() = default;
 };
 
-}  // namespace sinsei_umiusi_core::robot_state
+}  // namespace sinsei_umiusi_core::robot_strategy
 
 #endif  // SINSEI_UMIUSI_CORE_ROBOT_STATE_ROBOT_STATE_HPP
