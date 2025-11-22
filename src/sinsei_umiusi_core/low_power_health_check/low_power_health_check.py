@@ -29,7 +29,7 @@ class LowPowerHealthCheck(Node):
         self._timer: Timer = self.create_timer(1.0, self._timer_callback)
         self._low_power_circuit_info_sub: Subscription = self.create_subscription(
             LowPowerCircuitInfo,
-            'low_power_circuit_info',
+            '/state/low_power_circuit_info',
             self._low_power_circuit_info_callback,
             QOS_PROFILE_DEFAULT,
         )
