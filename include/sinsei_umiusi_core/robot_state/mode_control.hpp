@@ -5,27 +5,34 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include "sinsei_umiusi_msgs/srv/set_state.hpp"
+#include "sinsei_umiusi_msgs/srv/set_mode.hpp"
 
 namespace sinsei_umiusi_core::robot_state
 {
 
 class ModeControl : public BT::SyncActionNode
 {
+  public:
+    using Mode = sinsei_umiusi_msgs::srv::SetMode::Request::_state_type;
+
+    static constexpr Mode MODE_STANDBY = sinsei_umiusi_msgs::srv::SetMode::Request::STANDBY;
+    static constexpr Mode MODE_MANUAL = sinsei_umiusi_msgs::srv::SetMode::Request::MANUAL;
+    static constexpr Mode MODE_AUTO = sinsei_umiusi_msgs::srv::SetMode::Request::AUTO;
+    static constexpr Mode MODE_DEBUG = sinsei_umiusi_msgs::srv::SetMode::Request::DEBUG;
+
   private:
     rclcpp::Node::SharedPtr ros_node;
-    rclcpp::Service<sinsei_umiusi_msgs::srv::SetState>::SharedPtr set_state_srv;
+    rclcpp::Service<sinsei_umiusi_msgs::srv::SetMode>::SharedPtr set_state_srv;
 
-    sinsei_umiusi_msgs::srv::SetState::Request::_state_type current_mode;
+    Mode current_mode;
 
   public:
     ModeControl(const std::string & name, const BT::NodeConfiguration & config);
 
     static BT::PortsList providedPorts()
     {
-        using StateType = sinsei_umiusi_msgs::srv::SetState::Request::_state_type;
         return {
-          BT::OutputPort<StateType>("mode"),  // MANUAL, AUTO, DEBUG
+          BT::OutputPort<Mode>("mode"),  // MANUAL, AUTO, DEBUG
         };
     }
 

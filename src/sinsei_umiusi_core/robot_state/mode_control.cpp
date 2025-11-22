@@ -5,21 +5,18 @@ sinsei_umiusi_core::robot_state::ModeControl::ModeControl(
 : BT::SyncActionNode{name, config},
   ros_node{nullptr},
   set_state_srv{nullptr},
-  current_mode{sinsei_umiusi_msgs::srv::SetState::Request::STANDBY}
+  current_mode{MODE_STANDBY}
 {
     this->ros_node = rclcpp::Node::make_shared("_bt_mode_control");
-    this->set_state_srv = this->ros_node->create_service<sinsei_umiusi_msgs::srv::SetState>(
-      "/user_input/set_state",
-      [this](
-        const sinsei_umiusi_msgs::srv::SetState::Request::SharedPtr request,
-        sinsei_umiusi_msgs::srv::SetState::Response::SharedPtr response) {
+    this->set_state_srv = this->ros_node->create_service<sinsei_umiusi_msgs::srv::SetMode>(
+      "/user_input/set_mode", [this](
+                                const sinsei_umiusi_msgs::srv::SetMode::Request::SharedPtr request,
+                                sinsei_umiusi_msgs::srv::SetMode::Response::SharedPtr response) {
           if (this->current_mode == request->state) {
               response->set__success(true);
               return;
           }
-          if (
-            this->current_mode == sinsei_umiusi_msgs::srv::SetState::Request::STANDBY ||
-            request->state == sinsei_umiusi_msgs::srv::SetState::Request::STANDBY) {
+          if (this->current_mode == MODE_STANDBY || request->state == MODE_STANDBY) {
               // from STANDBY to MANUAL, AUTO, DEBUG or from MANUAL, AUTO, DEBUG to STANDBY
               response->set__success(true);
               this->current_mode = request->state;
