@@ -10,7 +10,7 @@ namespace sinsei_umiusi_core::robot_strategy
 class ModeMatch : public BT::ConditionNode
 {
   public:
-    using Mode = sinsei_umiusi_msgs::srv::SetMode::Request::_state_type;
+    using Mode = sinsei_umiusi_msgs::srv::SetMode::Request::_mode_type;
 
     static constexpr Mode MODE_STANDBY = sinsei_umiusi_msgs::srv::SetMode::Request::STANDBY;
     static constexpr Mode MODE_MANUAL = sinsei_umiusi_msgs::srv::SetMode::Request::MANUAL;
@@ -18,7 +18,7 @@ class ModeMatch : public BT::ConditionNode
     static constexpr Mode MODE_DEBUG = sinsei_umiusi_msgs::srv::SetMode::Request::DEBUG;
 
   private:
-    sinsei_umiusi_msgs::srv::SetMode::Request::_state_type target_mode;
+    Mode target_mode;
 
   public:
     ModeMatch(const std::string & name, const BT::NodeConfiguration & config);

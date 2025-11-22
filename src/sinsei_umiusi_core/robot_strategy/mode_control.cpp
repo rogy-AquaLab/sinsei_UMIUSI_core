@@ -12,14 +12,14 @@ sinsei_umiusi_core::robot_strategy::ModeControl::ModeControl(
       "/user_input/set_mode", [this](
                                 const sinsei_umiusi_msgs::srv::SetMode::Request::SharedPtr request,
                                 sinsei_umiusi_msgs::srv::SetMode::Response::SharedPtr response) {
-          if (this->current_mode == request->state) {
+          if (this->current_mode == request->mode) {
               response->set__success(true);
               return;
           }
-          if (this->current_mode == MODE_STANDBY || request->state == MODE_STANDBY) {
+          if (this->current_mode == MODE_STANDBY || request->mode == MODE_STANDBY) {
               // from STANDBY to MANUAL, AUTO, DEBUG or from MANUAL, AUTO, DEBUG to STANDBY
               response->set__success(true);
-              this->current_mode = request->state;
+              this->current_mode = request->mode;
               return;
           }
           // from MANUAL, AUTO, DEBUG to MANUAL, AUTO, DEBUG

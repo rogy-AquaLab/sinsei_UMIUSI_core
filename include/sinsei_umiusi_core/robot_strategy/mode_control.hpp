@@ -13,7 +13,7 @@ namespace sinsei_umiusi_core::robot_strategy
 class ModeControl : public BT::SyncActionNode
 {
   public:
-    using Mode = sinsei_umiusi_msgs::srv::SetMode::Request::_state_type;
+    using Mode = sinsei_umiusi_msgs::srv::SetMode::Request::_mode_type;
 
     static constexpr Mode MODE_STANDBY = sinsei_umiusi_msgs::srv::SetMode::Request::STANDBY;
     static constexpr Mode MODE_MANUAL = sinsei_umiusi_msgs::srv::SetMode::Request::MANUAL;
