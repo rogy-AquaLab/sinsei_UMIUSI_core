@@ -6,6 +6,7 @@ sinsei_umiusi_core::robot_strategy::Debug::Debug(
 : BT::StatefulActionNode{name, config},
   ros_node{nullptr},
   change_state_thruster_output_clt{nullptr},
+  thruster_enabled_pub{nullptr},
   robot_state_debug_msg{
     sinsei_umiusi_msgs::msg::RobotState{}.set__state(sinsei_umiusi_msgs::msg::RobotState::DEBUG)}
 {
@@ -13,6 +14,9 @@ sinsei_umiusi_core::robot_strategy::Debug::Debug(
     this->change_state_thruster_output_clt =
       this->ros_node->create_client<lifecycle_msgs::srv::ChangeState>(
         "/debug_thruster_output/change_state");
+    this->thruster_enabled_pub =
+      this->ros_node->create_publisher<sinsei_umiusi_msgs::msg::ThrusterEnabledAll>(
+        "/cmd/thruster_enabled_all", rclcpp::SystemDefaultsQoS{});
     this->robot_state_pub = this->ros_node->create_publisher<sinsei_umiusi_msgs::msg::RobotState>(
       "/robot_state", rclcpp::SystemDefaultsQoS{});
 }
@@ -59,6 +63,14 @@ auto sinsei_umiusi_core::robot_strategy::Debug::onHalted() -> void
 
     this->change_state_thruster_output_clt->wait_for_service();
     auto future = this->change_state_thruster_output_clt->async_send_request(req);
+
+    this->thruster_enabled_pub->publish(
+      sinsei_umiusi_msgs::msg::ThrusterEnabledAll{}
+        .set__lf(sinsei_umiusi_msgs::msg::ThrusterEnabled{}.set__esc(false).set__servo(false))
+        .set__lb(sinsei_umiusi_msgs::msg::ThrusterEnabled{}.set__esc(false).set__servo(false))
+        .set__rf(sinsei_umiusi_msgs::msg::ThrusterEnabled{}.set__esc(false).set__servo(false))
+        .set__rb(sinsei_umiusi_msgs::msg::ThrusterEnabled{}.set__esc(false).set__servo(false)));
+
     // Wait for the result.
     auto result = rclcpp::spin_until_future_complete(this->ros_node, future);
     if (result == rclcpp::FutureReturnCode::SUCCESS) {

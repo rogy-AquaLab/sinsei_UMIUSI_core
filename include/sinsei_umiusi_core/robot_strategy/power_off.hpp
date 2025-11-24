@@ -9,7 +9,6 @@
 
 #include "sinsei_umiusi_msgs/msg/main_power_output.hpp"
 #include "sinsei_umiusi_msgs/msg/robot_state.hpp"
-#include "sinsei_umiusi_msgs/msg/thruster_enabled_all.hpp"
 
 namespace sinsei_umiusi_core::robot_strategy
 {
@@ -19,11 +18,9 @@ class PowerOff : public BT::StatefulActionNode
   private:
     rclcpp::Node::SharedPtr ros_node;
     rclcpp::Publisher<sinsei_umiusi_msgs::msg::MainPowerOutput>::SharedPtr main_power_output_pub;
-    rclcpp::Publisher<sinsei_umiusi_msgs::msg::ThrusterEnabledAll>::SharedPtr thruster_enabled_pub;
     rclcpp::Publisher<sinsei_umiusi_msgs::msg::RobotState>::SharedPtr robot_state_pub;
 
     const sinsei_umiusi_msgs::msg::MainPowerOutput main_power_disabled_msg;
-    const sinsei_umiusi_msgs::msg::ThrusterEnabledAll thrusters_disabled_msg;
     const sinsei_umiusi_msgs::msg::RobotState robot_state_power_off_msg;
 
   public:
