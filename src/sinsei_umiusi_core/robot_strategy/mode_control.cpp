@@ -30,6 +30,9 @@ sinsei_umiusi_core::robot_strategy::ModeControl::ModeControl(
             "Invalid transition. Only STANDBY is available from MANUAL, AUTO, DEBUG state.");
           return;
       });
+    this->main_power_output_pub =
+      this->ros_node->create_publisher<sinsei_umiusi_msgs::msg::MainPowerOutput>(
+        "/cmd/main_power_output", rclcpp::SystemDefaultsQoS{});
 }
 
 auto sinsei_umiusi_core::robot_strategy::ModeControl::tick() -> BT::NodeStatus
