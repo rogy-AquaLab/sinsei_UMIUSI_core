@@ -5,6 +5,8 @@ sinsei_umiusi_core::robot_strategy::ModeControl::ModeControl(
 : BT::SyncActionNode{name, config},
   ros_node{nullptr},
   set_state_srv{nullptr},
+  main_power_output_pub{nullptr},
+  main_power_enabled_msg{sinsei_umiusi_msgs::msg::MainPowerOutput{}.set__enabled(true)},
   current_mode{MODE_STANDBY}
 {
     this->ros_node = rclcpp::Node::make_shared("_bt_mode_control");
@@ -28,11 +30,15 @@ sinsei_umiusi_core::robot_strategy::ModeControl::ModeControl(
             "Invalid transition. Only STANDBY is available from MANUAL, AUTO, DEBUG state.");
           return;
       });
+    this->main_power_output_pub =
+      this->ros_node->create_publisher<sinsei_umiusi_msgs::msg::MainPowerOutput>(
+        "/cmd/main_power_output", rclcpp::SystemDefaultsQoS{});
 }
 
 auto sinsei_umiusi_core::robot_strategy::ModeControl::tick() -> BT::NodeStatus
 {
     rclcpp::spin_some(this->ros_node);
     this->setOutput("mode", this->current_mode);
+    this->main_power_output_pub->publish(this->main_power_enabled_msg);
     return BT::NodeStatus::SUCCESS;
 }

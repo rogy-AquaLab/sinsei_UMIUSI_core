@@ -22,6 +22,7 @@ class Debug : public BT::StatefulActionNode
     rclcpp::Publisher<sinsei_umiusi_msgs::msg::RobotState>::SharedPtr robot_state_pub;
 
     const sinsei_umiusi_msgs::msg::RobotState robot_state_debug_msg;
+    const sinsei_umiusi_msgs::msg::ThrusterEnabledAll thruster_all_enabled_msg;
 
   public:
     Debug(const std::string & name, const BT::NodeConfiguration & config);

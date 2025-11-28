@@ -7,7 +7,13 @@ sinsei_umiusi_core::robot_strategy::Manual::Manual(
   change_state_target_generator_clt{nullptr},
   thruster_enabled_pub{nullptr},
   robot_state_manual_msg{
-    sinsei_umiusi_msgs::msg::RobotState{}.set__state(sinsei_umiusi_msgs::msg::RobotState::MANUAL)}
+    sinsei_umiusi_msgs::msg::RobotState{}.set__state(sinsei_umiusi_msgs::msg::RobotState::MANUAL)},
+  thruster_all_enabled_msg{
+    sinsei_umiusi_msgs::msg::ThrusterEnabledAll{}
+      .set__lf(sinsei_umiusi_msgs::msg::ThrusterEnabled{}.set__esc(true).set__servo(true))
+      .set__lb(sinsei_umiusi_msgs::msg::ThrusterEnabled{}.set__esc(true).set__servo(true))
+      .set__rf(sinsei_umiusi_msgs::msg::ThrusterEnabled{}.set__esc(true).set__servo(true))
+      .set__rb(sinsei_umiusi_msgs::msg::ThrusterEnabled{}.set__esc(true).set__servo(true))}
 {
     this->ros_node = rclcpp::Node::make_shared("_bt_manual");
     this->change_state_target_generator_clt =
@@ -61,6 +67,7 @@ auto sinsei_umiusi_core::robot_strategy::Manual::onRunning() -> BT::NodeStatus
     rclcpp::spin_some(this->ros_node);
 
     this->robot_state_pub->publish(this->robot_state_manual_msg);
+    this->thruster_enabled_pub->publish(this->thruster_all_enabled_msg);
     return BT::NodeStatus::RUNNING;
 }
 
