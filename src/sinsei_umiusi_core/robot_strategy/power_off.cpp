@@ -13,6 +13,7 @@ sinsei_umiusi_core::robot_strategy::PowerOff::PowerOff(
 : BT::StatefulActionNode(name, config),
   ros_node{nullptr},
   main_power_output_pub{nullptr},
+  main_power_enabled_msg{sinsei_umiusi_msgs::msg::MainPowerOutput{}.set__enabled(true)},
   main_power_disabled_msg{sinsei_umiusi_msgs::msg::MainPowerOutput{}.set__enabled(false)},
   robot_state_power_off_msg{sinsei_umiusi_msgs::msg::RobotState{}.set__state(
     sinsei_umiusi_msgs::msg::RobotState::POWER_OFF)}
@@ -42,6 +43,5 @@ auto sinsei_umiusi_core::robot_strategy::PowerOff::onRunning() -> BT::NodeStatus
 
 auto sinsei_umiusi_core::robot_strategy::PowerOff::onHalted() -> void
 {
-    this->main_power_output_pub->publish(
-      sinsei_umiusi_msgs::msg::MainPowerOutput{}.set__enabled(true));
+    this->main_power_output_pub->publish(this->main_power_enabled_msg);
 }

@@ -20,6 +20,7 @@ class PowerOff : public BT::StatefulActionNode
     rclcpp::Publisher<sinsei_umiusi_msgs::msg::MainPowerOutput>::SharedPtr main_power_output_pub;
     rclcpp::Publisher<sinsei_umiusi_msgs::msg::RobotState>::SharedPtr robot_state_pub;
 
+    const sinsei_umiusi_msgs::msg::MainPowerOutput main_power_enabled_msg;
     const sinsei_umiusi_msgs::msg::MainPowerOutput main_power_disabled_msg;
     const sinsei_umiusi_msgs::msg::RobotState robot_state_power_off_msg;
 

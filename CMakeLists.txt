@@ -43,7 +43,6 @@ ament_auto_add_executable(robot_strategy
   src/sinsei_umiusi_core/robot_strategy/main.cpp
   src/sinsei_umiusi_core/robot_strategy/manual.cpp
   src/sinsei_umiusi_core/robot_strategy/mode_control.cpp
-  src/sinsei_umiusi_core/robot_strategy/mode_match.cpp
   src/sinsei_umiusi_core/robot_strategy/power_off.cpp
   src/sinsei_umiusi_core/robot_strategy/standby.cpp
 )
