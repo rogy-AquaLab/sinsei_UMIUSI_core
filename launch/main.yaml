@@ -22,4 +22,3 @@ launch:
       - node:
           pkg: "web_video_server"
           exec: "web_video_server"
-          
