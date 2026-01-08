@@ -2,7 +2,10 @@
 <root BTCPP_format="4">
   <BehaviorTree ID="Main">
     <WhileDoElse>
-      <IsPowerOn />
+      <Sequence>
+        <FindClient />
+        <IsPowerOn />
+      </Sequence>
       <ReactiveSequence>
         <PowerOn />
         <ModeControl>
@@ -26,6 +29,8 @@
     <Action ID="Auto"
       editable="true" />
     <Action ID="Debug"
+      editable="true" />
+    <Condition ID="FindClient"
       editable="true" />
     <Condition ID="IsPowerOn"
       editable="true" />

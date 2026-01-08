@@ -5,10 +5,12 @@
     <TreeNodesModel>
         <Action ID="Auto" editable="true" />
         <Action ID="Debug" editable="true" />
+        <Condition ID="FindClient" editable="true" />
         <Condition ID="IsPowerOn" editable="true" />
         <Action ID="Manual" editable="true" />
         <Control ID="ModeControl" editable="true" />
         <Action ID="PowerOff" editable="true" />
+        <Action ID="PowerOn" editable="true" />
         <Action ID="Standby" editable="true" />
     </TreeNodesModel>
 </root>

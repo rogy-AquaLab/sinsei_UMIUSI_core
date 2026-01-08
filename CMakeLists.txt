@@ -39,6 +39,7 @@ ament_auto_add_executable(robot_strategy
   src/sinsei_umiusi_core/robot_strategy/auto.cpp
   src/sinsei_umiusi_core/robot_strategy/core.cpp
   src/sinsei_umiusi_core/robot_strategy/debug.cpp
+  src/sinsei_umiusi_core/robot_strategy/find_client.cpp
   src/sinsei_umiusi_core/robot_strategy/is_power_on.cpp
   src/sinsei_umiusi_core/robot_strategy/main.cpp
   src/sinsei_umiusi_core/robot_strategy/manual.cpp

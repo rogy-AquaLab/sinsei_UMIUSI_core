@@ -16,6 +16,7 @@
 
 #include "sinsei_umiusi_core/robot_strategy/auto.hpp"
 #include "sinsei_umiusi_core/robot_strategy/debug.hpp"
+#include "sinsei_umiusi_core/robot_strategy/find_client.hpp"
 #include "sinsei_umiusi_core/robot_strategy/is_power_on.hpp"
 #include "sinsei_umiusi_core/robot_strategy/manual.hpp"
 #include "sinsei_umiusi_core/robot_strategy/mode_control.hpp"
@@ -37,6 +38,7 @@ sinsei_umiusi_core::robot_strategy::Core::Core()
 
     {
         auto factory = BT::BehaviorTreeFactory();
+        factory.registerNodeType<sinsei_umiusi_core::robot_strategy::FindClient>("FindClient");
         factory.registerNodeType<sinsei_umiusi_core::robot_strategy::IsPowerOn>("IsPowerOn");
         factory.registerNodeType<sinsei_umiusi_core::robot_strategy::PowerOn>("PowerOn");
         factory.registerNodeType<sinsei_umiusi_core::robot_strategy::ModeControl>("ModeControl");
@@ -93,7 +95,7 @@ auto sinsei_umiusi_core::robot_strategy::Core::timer_callback() const -> void
         RCLCPP_WARN(this->get_logger(), "Behavior tree is not initialized.");
         return;
     }
-    auto status = this->tree->tickOnce();
+    auto status = this->tree->tickExactlyOnce();
     switch (status) {
         case BT::NodeStatus::SUCCESS:
             RCLCPP_INFO(this->get_logger(), "Behavior tree finished with SUCCESS.");
