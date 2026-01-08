@@ -6,7 +6,6 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include "sinsei_umiusi_msgs/msg/main_power_output.hpp"
 #include "sinsei_umiusi_msgs/srv/set_mode.hpp"
 
 namespace sinsei_umiusi_core::robot_strategy
@@ -26,9 +25,6 @@ class ModeControl : public BT::ControlNode
   private:
     rclcpp::Node::SharedPtr ros_node;
     rclcpp::Service<sinsei_umiusi_msgs::srv::SetMode>::SharedPtr set_state_srv;
-    rclcpp::Publisher<sinsei_umiusi_msgs::msg::MainPowerOutput>::SharedPtr main_power_output_pub;
-
-    const sinsei_umiusi_msgs::msg::MainPowerOutput main_power_enabled_msg;
 
     Mode current_mode;
     std::optional<size_t> current_child_index;

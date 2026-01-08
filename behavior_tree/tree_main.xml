@@ -3,13 +3,21 @@
   <BehaviorTree ID="Main">
     <WhileDoElse>
       <IsPowerOn />
-      <ModeControl>
-        <Standby />
-        <Manual />
-        <Auto />
-        <Debug />
-      </ModeControl>
-      <PowerOff />
+      <ReactiveSequence>
+        <PowerOn />
+        <ModeControl>
+          <Standby />
+          <Manual />
+          <Auto />
+          <Debug />
+        </ModeControl>
+      </ReactiveSequence>
+      <ReactiveSequence>
+        <PowerOff />
+        <Repeat num_cycles="-1">
+          <AlwaysSuccess />
+        </Repeat>
+      </ReactiveSequence>
     </WhileDoElse>
   </BehaviorTree>
 
@@ -26,6 +34,8 @@
     <Control ID="ModeControl"
       editable="true" />
     <Action ID="PowerOff"
+      editable="true" />
+    <Action ID="PowerOn"
       editable="true" />
     <Action ID="Standby"
       editable="true" />

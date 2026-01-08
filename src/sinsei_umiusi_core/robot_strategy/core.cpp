@@ -20,6 +20,7 @@
 #include "sinsei_umiusi_core/robot_strategy/manual.hpp"
 #include "sinsei_umiusi_core/robot_strategy/mode_control.hpp"
 #include "sinsei_umiusi_core/robot_strategy/power_off.hpp"
+#include "sinsei_umiusi_core/robot_strategy/power_on.hpp"
 #include "sinsei_umiusi_core/robot_strategy/standby.hpp"
 
 using namespace std::chrono_literals;
@@ -37,12 +38,13 @@ sinsei_umiusi_core::robot_strategy::Core::Core()
     {
         auto factory = BT::BehaviorTreeFactory();
         factory.registerNodeType<sinsei_umiusi_core::robot_strategy::IsPowerOn>("IsPowerOn");
-        factory.registerNodeType<sinsei_umiusi_core::robot_strategy::PowerOff>("PowerOff");
+        factory.registerNodeType<sinsei_umiusi_core::robot_strategy::PowerOn>("PowerOn");
         factory.registerNodeType<sinsei_umiusi_core::robot_strategy::ModeControl>("ModeControl");
         factory.registerNodeType<sinsei_umiusi_core::robot_strategy::Standby>("Standby");
         factory.registerNodeType<sinsei_umiusi_core::robot_strategy::Manual>("Manual");
         factory.registerNodeType<sinsei_umiusi_core::robot_strategy::Auto>("Auto");
         factory.registerNodeType<sinsei_umiusi_core::robot_strategy::Debug>("Debug");
+        factory.registerNodeType<sinsei_umiusi_core::robot_strategy::PowerOff>("PowerOff");
         auto tree = factory.createTreeFromFile(
           this->get_parameter(std::string(PARAM_NAME_BEHAVIOR_TREE_FILE)).as_string());
         this->groot2_publisher.emplace(tree, 1667);

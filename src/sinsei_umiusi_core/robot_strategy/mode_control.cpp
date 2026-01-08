@@ -19,8 +19,6 @@ sinsei_umiusi_core::robot_strategy::ModeControl::ModeControl(
 : BT::ControlNode{name, config},
   ros_node{nullptr},
   set_state_srv{nullptr},
-  main_power_output_pub{nullptr},
-  main_power_enabled_msg{sinsei_umiusi_msgs::msg::MainPowerOutput{}.set__enabled(true)},
   current_mode{MODE_STANDBY},
   current_child_index{std::nullopt}
 {
@@ -45,9 +43,6 @@ sinsei_umiusi_core::robot_strategy::ModeControl::ModeControl(
             "Invalid transition. Only STANDBY is available from MANUAL, AUTO, DEBUG state.");
           return;
       });
-    this->main_power_output_pub =
-      this->ros_node->create_publisher<sinsei_umiusi_msgs::msg::MainPowerOutput>(
-        "/cmd/main_power_output", rclcpp::SystemDefaultsQoS{});
 }
 
 auto sinsei_umiusi_core::robot_strategy::ModeControl::tick() -> BT::NodeStatus
@@ -63,8 +58,6 @@ auto sinsei_umiusi_core::robot_strategy::ModeControl::tick() -> BT::NodeStatus
             throw BT::LogicError(err_msg);
         }
     }
-
-    this->main_power_output_pub->publish(this->main_power_enabled_msg);
 
     auto child_index = _mode_to_child_index(this->current_mode);
     if (this->current_child_index.has_value() && this->current_child_index.value() != child_index) {
