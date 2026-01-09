@@ -1,11 +1,4 @@
 launch:
-  - let:
-      name: rosbridge_launch_file
-      value: "$(find-pkg-share rosbridge_server)/launch/rosbridge_websocket_launch.xml"
-
-  - include:
-      file: "$(var rosbridge_launch_file)"
-
   - group:
       - node:
           pkg: "sinsei_umiusi_core"
@@ -24,6 +17,8 @@ launch:
             - name: behavior_tree_file
               value: "$(find-pkg-share sinsei_umiusi_core)/behavior_tree/tree_main.xml"
       - node:
+          pkg: "rosbridge_server"
+          exec: "rosbridge_websocket"
+      - node:
           pkg: "web_video_server"
           exec: "web_video_server"
-          

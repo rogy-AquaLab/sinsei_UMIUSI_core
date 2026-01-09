@@ -17,8 +17,7 @@ RUN apt-get update && apt-get install -y \
     clangd-18 \
     clang-format-18 \
     clang-tidy-18 \
-    sccache \
-    ros-${ROS_DISTRO}-rosbridge-suite
+    sccache
 
 # Install editorconfig-checker
 RUN /tmp/scripts/install-ec.sh
