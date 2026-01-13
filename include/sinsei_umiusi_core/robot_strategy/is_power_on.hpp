@@ -8,6 +8,7 @@
 #include "sinsei_umiusi_msgs/msg/health_check_result.hpp"
 #include "sinsei_umiusi_msgs/srv/power_off.hpp"
 #include "sinsei_umiusi_msgs/srv/power_on.hpp"
+#include "std_msgs/msg/int32.hpp"
 
 namespace sinsei_umiusi_core::robot_strategy
 {
@@ -22,9 +23,11 @@ class IsPowerOn : public BT::ConditionNode
       low_power_health_check_sub;
     rclcpp::Subscription<sinsei_umiusi_msgs::msg::HealthCheckResult>::SharedPtr
       high_power_health_check_sub;
+    rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr client_count_sub;
 
     bool low_power_circuit_is_ok;
     bool high_power_circuit_is_ok;
+    int32_t clients_num;
     bool is_power_on;
 
   public:
