@@ -16,11 +16,11 @@
 
 #include "sinsei_umiusi_core/robot_strategy/auto.hpp"
 #include "sinsei_umiusi_core/robot_strategy/debug.hpp"
-#include "sinsei_umiusi_core/robot_strategy/is_power_on.hpp"
 #include "sinsei_umiusi_core/robot_strategy/manual.hpp"
 #include "sinsei_umiusi_core/robot_strategy/mode_control.hpp"
 #include "sinsei_umiusi_core/robot_strategy/power_off.hpp"
 #include "sinsei_umiusi_core/robot_strategy/power_on.hpp"
+#include "sinsei_umiusi_core/robot_strategy/should_power_on.hpp"
 #include "sinsei_umiusi_core/robot_strategy/standby.hpp"
 
 using namespace std::chrono_literals;
@@ -37,7 +37,7 @@ sinsei_umiusi_core::robot_strategy::Core::Core()
 
     {
         auto factory = BT::BehaviorTreeFactory();
-        factory.registerNodeType<sinsei_umiusi_core::robot_strategy::IsPowerOn>("IsPowerOn");
+        factory.registerNodeType<sinsei_umiusi_core::robot_strategy::ShouldPowerOn>("IsPowerOn");
         factory.registerNodeType<sinsei_umiusi_core::robot_strategy::PowerOn>("PowerOn");
         factory.registerNodeType<sinsei_umiusi_core::robot_strategy::ModeControl>("ModeControl");
         factory.registerNodeType<sinsei_umiusi_core::robot_strategy::Standby>("Standby");
