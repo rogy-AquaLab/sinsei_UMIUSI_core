@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root BTCPP_format="4" project_name="tree_main">
+    <include path="tree_main.xml" />
+    <!-- Description of Node Models (used by Groot) -->
+    <TreeNodesModel>
+        <Action ID="Auto" editable="true" />
+        <Action ID="Debug" editable="true" />
+        <Condition ID="ShouldPowerOn" editable="true" />
+        <Action ID="Manual" editable="true" />
+        <Control ID="ModeControl" editable="true" />
+        <Action ID="PowerOff" editable="true" />
+        <Action ID="PowerOn" editable="true" />
+        <Action ID="Standby" editable="true" />
+    </TreeNodesModel>
+</root>

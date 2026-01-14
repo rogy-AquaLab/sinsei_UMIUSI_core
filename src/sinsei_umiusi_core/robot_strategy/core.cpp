@@ -16,11 +16,11 @@
 
 #include "sinsei_umiusi_core/robot_strategy/auto.hpp"
 #include "sinsei_umiusi_core/robot_strategy/debug.hpp"
-#include "sinsei_umiusi_core/robot_strategy/is_power_on.hpp"
 #include "sinsei_umiusi_core/robot_strategy/manual.hpp"
 #include "sinsei_umiusi_core/robot_strategy/mode_control.hpp"
-#include "sinsei_umiusi_core/robot_strategy/mode_match.hpp"
 #include "sinsei_umiusi_core/robot_strategy/power_off.hpp"
+#include "sinsei_umiusi_core/robot_strategy/power_on.hpp"
+#include "sinsei_umiusi_core/robot_strategy/should_power_on.hpp"
 #include "sinsei_umiusi_core/robot_strategy/standby.hpp"
 
 using namespace std::chrono_literals;
@@ -37,14 +37,14 @@ sinsei_umiusi_core::robot_strategy::Core::Core()
 
     {
         auto factory = BT::BehaviorTreeFactory();
-        factory.registerNodeType<sinsei_umiusi_core::robot_strategy::IsPowerOn>("IsPowerOn");
-        factory.registerNodeType<sinsei_umiusi_core::robot_strategy::PowerOff>("PowerOff");
+        factory.registerNodeType<sinsei_umiusi_core::robot_strategy::ShouldPowerOn>("ShouldPowerOn");
+        factory.registerNodeType<sinsei_umiusi_core::robot_strategy::PowerOn>("PowerOn");
         factory.registerNodeType<sinsei_umiusi_core::robot_strategy::ModeControl>("ModeControl");
-        factory.registerNodeType<sinsei_umiusi_core::robot_strategy::ModeMatch>("ModeMatch");
         factory.registerNodeType<sinsei_umiusi_core::robot_strategy::Standby>("Standby");
         factory.registerNodeType<sinsei_umiusi_core::robot_strategy::Manual>("Manual");
         factory.registerNodeType<sinsei_umiusi_core::robot_strategy::Auto>("Auto");
         factory.registerNodeType<sinsei_umiusi_core::robot_strategy::Debug>("Debug");
+        factory.registerNodeType<sinsei_umiusi_core::robot_strategy::PowerOff>("PowerOff");
         auto tree = factory.createTreeFromFile(
           this->get_parameter(std::string(PARAM_NAME_BEHAVIOR_TREE_FILE)).as_string());
         this->groot2_publisher.emplace(tree, 1667);
@@ -84,7 +84,7 @@ sinsei_umiusi_core::robot_strategy::Core::Core()
               this->get_logger(), "Failed to call service change_state on manual_target_generator");
         }
     }
-    this->timer = this->create_wall_timer(1s, std::bind(&Core::timer_callback, this));
+    this->timer = this->create_wall_timer(100ms, std::bind(&Core::timer_callback, this));
 }
 
 auto sinsei_umiusi_core::robot_strategy::Core::timer_callback() const -> void
@@ -93,7 +93,7 @@ auto sinsei_umiusi_core::robot_strategy::Core::timer_callback() const -> void
         RCLCPP_WARN(this->get_logger(), "Behavior tree is not initialized.");
         return;
     }
-    auto status = this->tree->tickOnce();
+    auto status = this->tree->tickExactlyOnce();
     switch (status) {
         case BT::NodeStatus::SUCCESS:
             RCLCPP_INFO(this->get_logger(), "Behavior tree finished with SUCCESS.");

@@ -2,45 +2,42 @@
 <root BTCPP_format="4">
   <BehaviorTree ID="Main">
     <WhileDoElse>
-      <IsPowerOn />
+      <ShouldPowerOn />
       <ReactiveSequence>
-        <ModeControl mode="{mode}" />
-        <WhileDoElse>
-          <ModeMatch mode="{mode}" match_to="0" />
+        <PowerOn />
+        <ModeControl>
           <Standby />
-          <WhileDoElse>
-            <ModeMatch mode="{mode}" match_to="1" />
-            <Manual />
-            <WhileDoElse>
-              <ModeMatch mode="{mode}" match_to="2" />
-              <Auto />
-              <WhileDoElse>
-                <ModeMatch mode="{mode}" match_to="3" />
-                <Debug />
-              </WhileDoElse>
-            </WhileDoElse>
-          </WhileDoElse>
-        </WhileDoElse>
+          <Manual />
+          <Auto />
+          <Debug />
+        </ModeControl>
       </ReactiveSequence>
-      <PowerOff />
+      <ReactiveSequence>
+        <PowerOff />
+        <Repeat num_cycles="-1">
+          <AlwaysSuccess />
+        </Repeat>
+      </ReactiveSequence>
     </WhileDoElse>
   </BehaviorTree>
 
   <!-- Description of Node Models (used by Groot) -->
   <TreeNodesModel>
-    <Condition ID="IsPowerOn"
-      editable="true" />
-    <Action ID="ModeControl"
-      editable="true" />
-    <Action ID="PowerOff"
-      editable="true" />
-    <Action ID="Standby"
-      editable="true" />
-    <Action ID="Manual"
-      editable="true" />
     <Action ID="Auto"
       editable="true" />
     <Action ID="Debug"
+      editable="true" />
+    <Condition ID="ShouldPowerOn"
+      editable="true" />
+    <Action ID="Manual"
+      editable="true" />
+    <Control ID="ModeControl"
+      editable="true" />
+    <Action ID="PowerOff"
+      editable="true" />
+    <Action ID="PowerOn"
+      editable="true" />
+    <Action ID="Standby"
       editable="true" />
   </TreeNodesModel>
 

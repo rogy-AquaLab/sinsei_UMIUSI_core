@@ -10,7 +10,7 @@ using namespace std::placeholders;
 
 sinsei_umiusi_core::robot_strategy::PowerOff::PowerOff(
   const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config),
+: BT::ActionNodeBase(name, config),
   ros_node{nullptr},
   main_power_output_pub{nullptr},
   main_power_disabled_msg{sinsei_umiusi_msgs::msg::MainPowerOutput{}.set__enabled(false)},
@@ -25,23 +25,13 @@ sinsei_umiusi_core::robot_strategy::PowerOff::PowerOff(
       "/robot_state", rclcpp::SystemDefaultsQoS{});
 }
 
-auto sinsei_umiusi_core::robot_strategy::PowerOff::onStart() -> BT::NodeStatus
-{
-    this->main_power_output_pub->publish(this->main_power_disabled_msg);
-    return BT::NodeStatus::RUNNING;
-}
-
-auto sinsei_umiusi_core::robot_strategy::PowerOff::onRunning() -> BT::NodeStatus
+auto sinsei_umiusi_core::robot_strategy::PowerOff::tick() -> BT::NodeStatus
 {
     rclcpp::spin_some(this->ros_node);
 
     this->main_power_output_pub->publish(this->main_power_disabled_msg);
     this->robot_state_pub->publish(this->robot_state_power_off_msg);
-    return BT::NodeStatus::RUNNING;
+    return BT::NodeStatus::SUCCESS;
 }
 
-auto sinsei_umiusi_core::robot_strategy::PowerOff::onHalted() -> void
-{
-    this->main_power_output_pub->publish(
-      sinsei_umiusi_msgs::msg::MainPowerOutput{}.set__enabled(true));
-}
+auto sinsei_umiusi_core::robot_strategy::PowerOff::halt() -> void {}
