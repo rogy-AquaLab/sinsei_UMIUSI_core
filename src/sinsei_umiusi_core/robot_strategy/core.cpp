@@ -37,7 +37,7 @@ sinsei_umiusi_core::robot_strategy::Core::Core()
 
     {
         auto factory = BT::BehaviorTreeFactory();
-        factory.registerNodeType<sinsei_umiusi_core::robot_strategy::ShouldPowerOn>("IsPowerOn");
+        factory.registerNodeType<sinsei_umiusi_core::robot_strategy::ShouldPowerOn>("ShouldPowerOn");
         factory.registerNodeType<sinsei_umiusi_core::robot_strategy::PowerOn>("PowerOn");
         factory.registerNodeType<sinsei_umiusi_core::robot_strategy::ModeControl>("ModeControl");
         factory.registerNodeType<sinsei_umiusi_core::robot_strategy::Standby>("Standby");
