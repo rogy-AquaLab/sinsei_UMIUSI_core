@@ -19,6 +19,3 @@ launch:
       - node:
           pkg: "rosbridge_server"
           exec: "rosbridge_websocket"
-      - node:
-          pkg: "web_video_server"
-          exec: "web_video_server"
