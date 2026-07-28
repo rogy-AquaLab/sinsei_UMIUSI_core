@@ -64,6 +64,8 @@ class ManualTargetGenerator(LifecycleNode):
     def _timer_callback(self) -> None:
         if not self._target_updated:
             self.get_logger().warning('Target is not updated')
+            # Clear the last command so input loss cannot keep the robot moving.
+            self._target_pub.publish(Target())
         self._target_updated = False
 
     def _target_callback(self, msg: Target) -> None:
