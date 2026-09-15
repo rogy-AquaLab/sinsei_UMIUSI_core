@@ -22,8 +22,6 @@ class ManualTargetGenerator(LifecycleNode):
         super().__init__('manual_target_generator')
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
-        self._target_updated: bool = False
-
         self._timer: Timer = self.create_timer(
             0.1,
             self._timer_callback,
@@ -39,17 +37,19 @@ class ManualTargetGenerator(LifecycleNode):
         return TransitionCallbackReturn.SUCCESS
 
     def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
-        self._timer.reset()
+        self._clear_target()
         self._target_sub: Subscription = self.create_subscription(
             Target,
             '/user_input/target',
             self._target_callback,
             QOS_PROFILE_DEFAULT,
         )
+        self._timer.reset()
         return TransitionCallbackReturn.SUCCESS
 
     def on_deactivate(self, state: LifecycleState) -> TransitionCallbackReturn:
         self._timer.cancel()
+        self._clear_target()
         if not self.destroy_subscription(self._target_sub):
             self.get_logger().warning('Failed to destroy subscription')
         return TransitionCallbackReturn.SUCCESS
@@ -62,13 +62,16 @@ class ManualTargetGenerator(LifecycleNode):
         return TransitionCallbackReturn.SUCCESS
 
     def _timer_callback(self) -> None:
-        if not self._target_updated:
-            self.get_logger().warning('Target is not updated')
-        self._target_updated = False
+        self.get_logger().warning('Target is not updated')
+        self._clear_target()
+
+    def _clear_target(self) -> None:
+        # Clear the last command so input loss cannot keep the robot moving.
+        self._target_pub.publish(Target())
 
     def _target_callback(self, msg: Target) -> None:
         self._target_pub.publish(msg)
-        self._target_updated = True
+        self._timer.reset()
 
 
 def main(args: list[str] = sys.argv) -> None:
