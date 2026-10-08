@@ -15,6 +15,7 @@ sinsei_umiusi_core::robot_strategy::ShouldPowerOn::ShouldPowerOn(
   low_power_circuit_is_ok{false},
   high_power_circuit_is_ok{false},
   clients_num{0},
+  robot_state{sinsei_umiusi_msgs::msg::RobotState::POWER_OFF},
   should_power_on{false}
 {
     this->ros_node = rclcpp::Node::make_shared("_bt_is_power_on");
@@ -33,6 +34,11 @@ sinsei_umiusi_core::robot_strategy::ShouldPowerOn::ShouldPowerOn(
     this->client_count_sub = this->ros_node->create_subscription<std_msgs::msg::Int32>(
       "/client_count", rclcpp::SystemDefaultsQoS{},
       [this](const std_msgs::msg::Int32::SharedPtr msg) { this->clients_num = msg->data; });
+    this->robot_state_sub = this->ros_node->create_subscription<sinsei_umiusi_msgs::msg::RobotState>(
+      "/robot_state", rclcpp::SystemDefaultsQoS{},
+      [this](const sinsei_umiusi_msgs::msg::RobotState::SharedPtr msg) {
+          this->robot_state = msg->state;
+      });
     this->power_off_srv = this->ros_node->create_service<sinsei_umiusi_msgs::srv::PowerOff>(
       "/user_input/power_off",
       [this](
@@ -73,10 +79,18 @@ auto sinsei_umiusi_core::robot_strategy::ShouldPowerOn::tick() -> BT::NodeStatus
     rclcpp::spin_some(this->ros_node);
 
     if (this->clients_num <= 0) {
-        this->should_power_on = false;
-        RCLCPP_WARN_THROTTLE(
-          this->ros_node->get_logger(), *this->ros_node->get_clock(), 3000,
-          "No clients connected to rosbridge server.");
+        if (this->robot_state == sinsei_umiusi_msgs::msg::RobotState::AUTO) {
+            // 競技中は LAN を抜いて走る（外部との通信は禁止）。Auto の間は切断で電源を落とさない。
+            // 止めるときは auto_target_generator の持ち時間切れ（推力 0）か、再接続して Standby に戻す
+            RCLCPP_WARN_THROTTLE(
+              this->ros_node->get_logger(), *this->ros_node->get_clock(), 10000,
+              "No clients connected, but keeping power on in AUTO mode.");
+        } else {
+            this->should_power_on = false;
+            RCLCPP_WARN_THROTTLE(
+              this->ros_node->get_logger(), *this->ros_node->get_clock(), 3000,
+              "No clients connected to rosbridge server.");
+        }
     }
 
     return this->should_power_on ? BT::NodeStatus::SUCCESS : BT::NodeStatus::FAILURE;
