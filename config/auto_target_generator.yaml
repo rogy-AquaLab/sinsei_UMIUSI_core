@@ -1,0 +1,37 @@
+# auto_target_generator（風船検出 + 行動決定）のパラメータ。
+# 数値は型を合わせること（15 ではなく 15.0）。ROS 2 のパラメータは型が違うと読み込みで落ちる。
+# 各項目の意味は sinsei_umiusi_core/balloon/mission.py の MissionParams を参照。
+/auto_target_generator:
+  ros__parameters:
+    # 共有メモリ（control の cameras_shm.yaml）。動画ファイルのパスを入れると再生で試せる
+    camera_source: "shmsrc socket-path=/tmp/umiusi_cam1.sock is-live=true ! video/x-raw,format=BGR,width=320,height=240 ! appsink drop=true max-buffers=1 sync=false"
+    # 色のしきい値。ファイル名だけなら config/balloon/ から探す。絶対パスも可。
+    # 会場で合わせ直したものに差し替える（noir.json / normal.json は叩き台）
+    detector_config: "noir.json"
+    rate_hz: 10.0
+    max_frame_age: 0.5
+    # control の方位保持（hold_yaw）は実機で未検証なので既定は使わない
+    use_hold_yaw: false
+    # 向きの対応。陸上で確かめ、逆なら -1.0（docs/auto_balloon.md）
+    sign_surge: 1.0
+    sign_heave: 1.0
+    sign_yaw: 1.0
+    # 色合わせ用に生フレームを残す。空なら残さない
+    save_dir: "/home/pi/runs/auto"
+    save_every: 0.5
+    mission:
+      start_delay: 15.0
+      mission_time: 240.0
+      dive_time: 12.0
+      dive_heave: -0.4
+      approach_surge_far: 0.35
+      approach_surge_near: 0.15
+      ram_surge: 0.6
+      ram_time: 3.0
+      backoff_surge: -0.3
+      backoff_time: 2.0
+      search_yaw_rate: 0.35
+      aim_x: 0.0
+      aim_y: 0.0
+      first_color: "yellow"
+      priority: ["red", "yellow"]

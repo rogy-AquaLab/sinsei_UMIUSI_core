@@ -91,6 +91,7 @@ ament_auto_package(
   INSTALL_TO_SHARE
   launch
   behavior_tree
+  config
 )
 
 # ! 以下、後ろの方に書かないと無限ループに陥るので注意

@@ -9,6 +9,8 @@ launch:
       - node:
           pkg: "sinsei_umiusi_core"
           exec: "auto_target_generator"
+          param:
+            - from: "$(find-pkg-share sinsei_umiusi_core)/config/auto_target_generator.yaml"
       - node:
           pkg: "sinsei_umiusi_core"
           exec: "robot_strategy"
