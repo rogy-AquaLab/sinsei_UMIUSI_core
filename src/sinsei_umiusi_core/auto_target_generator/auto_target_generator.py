@@ -146,11 +146,17 @@ class AutoTargetGenerator(LifecycleNode):
             String, '~/status', QOS_PROFILE_DEFAULT
         )
         try:
+            share = Path(get_package_share_directory('sinsei_umiusi_core'))
             detector_config = Path(self._param('detector_config'))
             if not detector_config.is_absolute():
-                share = Path(get_package_share_directory('sinsei_umiusi_core'))
                 detector_config = share / 'config' / 'balloon' / detector_config
-            self._watcher = ConfigWatcher(detector_config)
+            # 読めなくても起動は失敗させない（未構成で残ると AUTO に入った瞬間にプロセスごと落ちる）。
+            # 同梱の normal.json で動き、指定のファイルができたら切り替える
+            self._watcher = ConfigWatcher(
+                detector_config, fallback=share / 'config' / 'balloon' / 'normal.json'
+            )
+            if self._watcher.startup_error:
+                self.get_logger().error(self._watcher.startup_error)
             mission_params = params_from_dict(
                 {
                     f.name: self._param(f'mission.{f.name}')
