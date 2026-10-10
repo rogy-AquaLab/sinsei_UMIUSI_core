@@ -217,7 +217,7 @@ class State:
             for c, rs in self.params.colors.items()
         }
 
-    def render(self, idx: int, view: str) -> bytes:
+    def render(self, idx: int, view: str, boxes: bool = True) -> bytes:
         _name, img = self.frames[idx]
         hsv = self.hsv[idx]
         h, w = hsv.shape[:2]
@@ -228,10 +228,11 @@ class State:
             for c, m in masks.items():
                 over[m > 0] = DRAW[c]
             shown = over
-        dets, _ = detect(img, self.params)
-        for d in dets:
-            x, y, bw, bh = d.bbox
-            cv2.rectangle(shown, (x, y), (x + bw, y + bh), DRAW[d.color], 1)
+        if boxes:
+            dets, _ = detect(img, self.params)
+            for d in dets:
+                x, y, bw, bh = d.bbox
+                cv2.rectangle(shown, (x, y), (x + bw, y + bh), DRAW[d.color], 1)
         for lab, fi, x, y, r in self.clicks:
             if fi == idx:
                 cv2.circle(
@@ -339,7 +340,8 @@ def main() -> None:
                 )
             elif u.path == '/api/render':
                 view = q.get('view', ['image'])[0]
-                self._send(200, state.render(int(q['i'][0]), view), 'image/jpeg')
+                boxes = q.get('boxes', ['1'])[0] != '0'
+                self._send(200, state.render(int(q['i'][0]), view, boxes), 'image/jpeg')
             elif u.path == '/api/pixel':
                 self._json(
                     state.pixel(int(q['i'][0]), float(q['x'][0]), float(q['y'][0]))
@@ -360,8 +362,12 @@ def main() -> None:
                     )
                     self._json({'counts': state.counts()})
                 elif self.path == '/api/undo':
-                    if state.clicks:
-                        state.clicks.pop()
+                    # label を付けたら、その色の最後のクリックだけを消す
+                    label = body.get('label')
+                    for k in range(len(state.clicks) - 1, -1, -1):
+                        if label is None or state.clicks[k][0] == label:
+                            del state.clicks[k]
+                            break
                     self._json({'counts': state.counts()})
                 elif self.path == '/api/propose':
                     self._json(
