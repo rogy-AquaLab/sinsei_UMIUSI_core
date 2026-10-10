@@ -52,12 +52,14 @@
     <span id="pos" class="muted"></span>
     <button id="prev">← 前</button><button id="next">次 →</button>
     <button id="view">マスク表示 (M)</button>
+    <button id="wb">色かぶり補正: ?</button>
     <label class="muted">クリックの大きさ <input id="brush" type="range" min="0.005" max="0.04" step="0.005" value="0.015"></label>
   </div>
 
   <div class="main">
     <div class="left">
       <img id="img" alt="">
+      <div class="muted" id="px">画像の上にカーソルを置くと、その点の色の値（H 0〜179 / S / V）と、どの色の範囲に入るかが出る</div>
       <div id="strip"></div>
       <div class="muted">下のマス: 黄・赤・青の線 = そのコマで検出あり（「全コマで確認」を押したとき）。マスを押すとそのコマへ。</div>
     </div>
@@ -107,8 +109,33 @@ async function load() {
     b.onclick = () => { label = l; renderLabels(); };
     $("labels").appendChild(b);
   });
-  renderLabels(); renderCounts(st.counts); renderRanges(st.ranges); render();
+  renderLabels(); renderCounts(st.counts); renderRanges(st.ranges); render(); renderWb();
 }
+function renderWb() {
+  const wb = st.params.white_balance;
+  $("wb").textContent = `色かぶり補正: ${wb === "grayworld" ? "あり" : "なし"}（押すと切り替え）`;
+}
+let pxTimer = null;
+$("img").onmousemove = (e) => {
+  const rect = e.target.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / rect.width, y = (e.clientY - rect.top) / rect.height;
+  clearTimeout(pxTimer);
+  pxTimer = setTimeout(async () => {
+    try {
+      const p = await api(`/api/pixel?i=${i}&x=${x}&y=${y}`);
+      const inside = p.inside.length ? p.inside.map((c) => LABELS[c]).join("・") + " の範囲に入る" : "どの色の範囲にも入らない";
+      $("px").textContent = `H ${p.h} / S ${p.s} / V ${p.v} → ${inside}`;
+    } catch (err) { /* 読み取りの失敗は無視 */ }
+  }, 60);
+};
+$("wb").onclick = async () => {
+  try {
+    const mode = st.params.white_balance === "grayworld" ? "none" : "grayworld";
+    await api("/api/white_balance", { mode });
+    st.params.white_balance = mode; renderWb(); render();
+    msg(`色かぶり補正を「${mode === "grayworld" ? "あり" : "なし"}」にした。範囲はそのままなので、もう一度「提案」を押す`);
+  } catch (e) { msg(e.message); }
+};
 
 function renderLabels() {
   for (const b of document.querySelectorAll(".lab")) b.classList.toggle("on", b.dataset.l === label);
@@ -173,9 +200,16 @@ async function proposeAll() {
   try {
     const r = await api("/api/propose", {});
     renderRanges(r.ranges); render();
-    msg(Object.entries(r.result).map(([c, v]) => v.skipped ? `${LABELS[c]}: ${v.skipped}` :
-      `${LABELS[c]}: 風船の画素の ${Math.round(v.keep * 100)}% を拾う` +
-      (v.bg_in === null ? "（背景のクリック無し）" : `、背景の ${Math.round(v.bg_in * 100)}% を拾う`)).join(" / "));
+    const lines = Object.entries(r.result).map(([c, v]) => {
+      if (c === "background") return `背景: ${v.n} 画素、中央 H${v.median[0]} S${v.median[1]} V${v.median[2]}`;
+      if (v.skipped) return `${LABELS[c]}: ${v.skipped}`;
+      const rg = r.ranges[c].map((x) => `H${x.lo[0]}〜${x.hi[0]} S${x.lo[1]}〜 V${x.lo[2]}〜`).join(" + ");
+      const hit = v.mask_hit === null ? "" : `、ノイズ除去後のマスクに残るのは ${Math.round(v.mask_hit * 100)}%`;
+      return `${LABELS[c]}: ${v.n} 画素、中央 H${v.median[0]} S${v.median[1]} V${v.median[2]} → 範囲 ${rg}。` +
+        `風船の画素の ${Math.round(v.keep * 100)}% を拾う` +
+        (v.bg_in === null ? "（背景のクリック無し）" : `、背景の ${Math.round(v.bg_in * 100)}% を拾う`) + hit;
+    });
+    $("msg").innerHTML = lines.map((l) => l.replace(/[&<>]/g, (ch) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;"}[ch]))).join("<br>");
   } catch (e) { msg(e.message); }
 }
 async function summary() {

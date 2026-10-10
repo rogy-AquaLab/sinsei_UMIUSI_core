@@ -18,7 +18,7 @@ import json
 import os
 import socket
 import sys
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
@@ -105,6 +105,11 @@ class State:
             raise ValueError(f'画像が無い: {source}')
         self.frames = frames
         self.source = source
+        self.clicks = []  # (label, frame_idx, x, y, r) 正規化座標
+        self._recompute()
+
+    def _recompute(self) -> None:
+        frames = self.frames
         self.hsv = [preprocess(img, self.params) for _, img in frames]
         # 塗りつぶした灰色 (128,128,128) は見本に入れない
         self.painted = [
@@ -116,7 +121,46 @@ class State:
             > 0
             for (_, img), h in zip(frames, self.hsv, strict=True)
         ]
-        self.clicks = []  # (label, frame_idx, x, y, r) 正規化座標
+
+    def set_white_balance(self, mode: str) -> None:
+        """色かぶり補正を切り替える（クリックはそのまま。見本の色はこの補正で計算し直す）。"""
+        if mode not in ('none', 'grayworld'):
+            raise ValueError(f'white_balance は none か grayworld: {mode}')
+        self.params = replace(self.params, white_balance=mode)
+        self.base_raw['white_balance'] = mode
+        self._recompute()
+
+    def pixel(self, idx: int, x: float, y: float):
+        """その点の HSV と、どの色の範囲に入るか（カーソルの読み取り用）。"""
+        hsv = self.hsv[idx]
+        h, w = hsv.shape[:2]
+        px = hsv[min(h - 1, int(y * h)), min(w - 1, int(x * w))]
+        inside = [
+            c
+            for c, rs in self.params.colors.items()
+            if any(all(r.lo[k] <= int(px[k]) <= r.hi[k] for k in range(3)) for r in rs)
+        ]
+        return {'h': int(px[0]), 's': int(px[1]), 'v': int(px[2]), 'inside': inside}
+
+    def mask_hit(self, label):
+        """クリックした所のうち、最終的なマスク（ノイズ除去の後）に入っている割合。"""
+        hit = total = 0
+        masks_cache = {}
+        for lab, fi, x, y, r in self.clicks:
+            if lab != label:
+                continue
+            if fi not in masks_cache:
+                masks_cache[fi] = color_masks(self.hsv[fi], self.params)
+            m = masks_cache[fi].get(label)
+            if m is None:
+                continue
+            h, w = m.shape
+            cx, cy, rr = x * w, y * h, max(1.0, r * w)
+            yy, xx = np.ogrid[:h, :w]
+            sel = ((xx - cx) ** 2 + (yy - cy) ** 2 <= rr * rr) & ~self.painted[fi]
+            total += int(sel.sum())
+            hit += int((m[sel] > 0).sum())
+        return round(hit / total, 3) if total else None
 
     def samples(self, label):
         out = []
@@ -147,6 +191,16 @@ class State:
             result[c] = {
                 'keep': round(p.keep, 3),
                 'bg_in': None if p.bg_in is None else round(p.bg_in, 3),
+                'n': int(len(s)),
+                'median': [int(v) for v in np.median(s, axis=0)],
+            }
+        for c in COLORS:
+            if 'skipped' not in result[c]:
+                result[c]['mask_hit'] = self.mask_hit(c)
+        if len(bg):
+            result['background'] = {
+                'n': int(len(bg)),
+                'median': [int(v) for v in np.median(bg, axis=0)],
             }
         self.last_proposal = result
         return result
@@ -286,6 +340,10 @@ def main() -> None:
             elif u.path == '/api/render':
                 view = q.get('view', ['image'])[0]
                 self._send(200, state.render(int(q['i'][0]), view), 'image/jpeg')
+            elif u.path == '/api/pixel':
+                self._json(
+                    state.pixel(int(q['i'][0]), float(q['x'][0]), float(q['y'][0]))
+                )
             elif u.path == '/api/summary':
                 self._json(state.summary())
             else:
@@ -312,6 +370,9 @@ def main() -> None:
                 elif self.path == '/api/ranges':
                     state.set_ranges(body['ranges'])
                     self._json({'ranges': state.ranges_json()})
+                elif self.path == '/api/white_balance':
+                    state.set_white_balance(body['mode'])
+                    self._json({'white_balance': state.params.white_balance})
                 elif self.path == '/api/reload':
                     # 撮り直したら押す。しきい値はそのまま、クリックは消える
                     src = fixed_source or newest_capture(state.out_dir)
