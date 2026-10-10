@@ -1,6 +1,6 @@
 """検出器のパラメータ。JSON から読む（会場で書き換える前提）。
 
-元: sinsei_umiusi_ballon_detector d9e663d（評価ツールと評価セットはそちら）。直すときは両方を揃えること。
+元: sinsei_umiusi_ballon_detector 2e25c28（評価ツールと評価セットはそちら）。直すときは両方を揃えること。
 """
 
 from __future__ import annotations

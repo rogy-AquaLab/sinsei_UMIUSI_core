@@ -8,7 +8,7 @@
 
 座標は作業解像度に依存しないよう、画像幅・高さで正規化して返す。
 
-元: sinsei_umiusi_ballon_detector d9e663d（評価ツールと評価セットはそちら）。直すときは両方を揃えること。
+元: sinsei_umiusi_ballon_detector 2e25c28（評価ツールと評価セットはそちら）。直すときは両方を揃えること。
 """
 
 from __future__ import annotations
@@ -67,17 +67,8 @@ def color_masks(hsv: np.ndarray, params: DetectorParams) -> Dict[str, np.ndarray
     return masks
 
 
-def detect(
-    bgr: np.ndarray,
-    params: DetectorParams,
-    ignore_mask: Optional[np.ndarray] = None,
-) -> Tuple[List[Detection], Dict[str, np.ndarray]]:
-    """BGR 画像から風船を探す。
-
-    ignore_mask: 入力と同じ範囲を覆う uint8（大きさは問わない。作業解像度に合わせて縮める）。
-                 非 0 の画素は無視する（画面録画の UI 部品など）。
-    戻り値: (検出のリスト（面積の大きい順）, 色ごとのマスク)
-    """
+def preprocess(bgr: np.ndarray, params: DetectorParams) -> np.ndarray:
+    """色を判定する HSV 画像（作業解像度）を作る。色合わせの道具も同じものを使う。"""
     h0, w0 = bgr.shape[:2]
     w = params.work_width
     # 入力が縦横比を潰されていても（16:9 のカメラを 320x240 に縮めた等）、カメラ本来の比率に戻してから
@@ -91,7 +82,22 @@ def detect(
         raise ValueError(f'unknown white_balance: {params.white_balance}')
     if params.blur_ksize > 1:
         img = cv2.GaussianBlur(img, (params.blur_ksize, params.blur_ksize), 0)
-    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    return cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+
+def detect(
+    bgr: np.ndarray,
+    params: DetectorParams,
+    ignore_mask: Optional[np.ndarray] = None,
+) -> Tuple[List[Detection], Dict[str, np.ndarray]]:
+    """BGR 画像から風船を探す。
+
+    ignore_mask: 入力と同じ範囲を覆う uint8（大きさは問わない。作業解像度に合わせて縮める）。
+                 非 0 の画素は無視する（画面録画の UI 部品など）。
+    戻り値: (検出のリスト（面積の大きい順）, 色ごとのマスク)
+    """
+    hsv = preprocess(bgr, params)
+    h, w = hsv.shape[:2]
 
     masks = color_masks(hsv, params)
     if ignore_mask is not None:

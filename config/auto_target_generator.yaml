@@ -6,8 +6,11 @@
     # 共有メモリ（control の cameras_shm.yaml）。動画ファイルのパスを入れると再生で試せる
     camera_source: "shmsrc socket-path=/tmp/umiusi_cam1.sock is-live=true ! video/x-raw,format=BGR,width=320,height=240 ! appsink drop=true max-buffers=1 sync=false"
     # 色のしきい値。ファイル名だけなら config/balloon/ から探す。絶対パスも可。
-    # 会場で合わせ直したものに差し替える（noir.json / normal.json は叩き台）
-    detector_config: "noir.json"
+    # 色合わせ（scripts/calibrate_server.py）をするなら、その保存先の current.json を絶対パスで指す
+    # （例: "/home/pi/umiusi_balloon/current.json"）。保存するたびに自動で読み直す。
+    # noir.json / normal.json は叩き台
+    detector_config: "normal.json"
+    detector_reload_period: 1.0
     rate_hz: 10.0
     max_frame_age: 0.5
     # control の方位保持（hold_yaw）は実機で未検証なので既定は使わない

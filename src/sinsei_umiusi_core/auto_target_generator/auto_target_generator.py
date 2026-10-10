@@ -18,7 +18,8 @@ from rclpy.qos import qos_profile_default as QOS_PROFILE_DEFAULT
 from rclpy.timer import Timer
 from std_msgs.msg import String
 
-from sinsei_umiusi_core.balloon import detect, load_params
+from sinsei_umiusi_core.balloon import detect
+from sinsei_umiusi_core.balloon.config_watch import ConfigWatcher
 from sinsei_umiusi_core.balloon.mission import (
     BalloonMission,
     Command,
@@ -111,7 +112,9 @@ class AutoTargetGenerator(LifecycleNode):
         super().__init__('auto_target_generator')
         self.declare_parameter('camera_source', DEFAULT_CAMERA)
         # ファイル名だけなら share/sinsei_umiusi_core/config/balloon/ から探す。絶対パスならそのまま
-        self.declare_parameter('detector_config', 'noir.json')
+        self.declare_parameter('detector_config', 'normal.json')
+        # 色の設定ファイルの更新を見る周期 [s]。変わっていたら読み直す（色合わせの結果をそのまま反映する）。0 で見ない
+        self.declare_parameter('detector_reload_period', 1.0)
         self.declare_parameter('rate_hz', 10.0)
         # これより古いフレームは使わない [s]
         self.declare_parameter('max_frame_age', 0.5)
@@ -147,7 +150,7 @@ class AutoTargetGenerator(LifecycleNode):
             if not detector_config.is_absolute():
                 share = Path(get_package_share_directory('sinsei_umiusi_core'))
                 detector_config = share / 'config' / 'balloon' / detector_config
-            self._detector_params = load_params(detector_config)
+            self._watcher = ConfigWatcher(detector_config)
             mission_params = params_from_dict(
                 {
                     f.name: self._param(f'mission.{f.name}')
@@ -165,6 +168,12 @@ class AutoTargetGenerator(LifecycleNode):
         )
         self._camera = None
         self._save_log = None
+        self._reload_timer: Timer | None = None
+        if self._param('detector_reload_period') > 0:
+            # inactive の間も回す（AUTO に入る前に色合わせを終えておけるように）
+            self._reload_timer = self.create_timer(
+                self._param('detector_reload_period'), self._reload_detector
+            )
         self.get_logger().info(f'detector_config: {detector_config}')
         return TransitionCallbackReturn.SUCCESS
 
@@ -189,8 +198,9 @@ class AutoTargetGenerator(LifecycleNode):
         return TransitionCallbackReturn.SUCCESS
 
     def on_cleanup(self, state: LifecycleState) -> TransitionCallbackReturn:
-        if not self.destroy_timer(self._timer):
-            self.get_logger().warning('Failed to destroy timer')
+        for timer in (self._timer, self._reload_timer):
+            if timer is not None and not self.destroy_timer(timer):
+                self.get_logger().warning('Failed to destroy timer')
         for pub in (self._target_pub, self._attitude_target_pub, self._status_pub):
             if not self.destroy_publisher(pub):
                 self.get_logger().warning('Failed to destroy publisher')
@@ -205,7 +215,7 @@ class AutoTargetGenerator(LifecycleNode):
             fresh = now - t_frame <= self._param('max_frame_age')
             if seq != self._last_seq and frame is not None and fresh:
                 self._last_seq = seq
-                dets, _ = detect(frame, self._detector_params)
+                dets, _ = detect(frame, self._watcher.params)
             cmd = self._mission.step(now, dets)
         except Exception as e:  # noqa: BLE001 何が起きても推力 0 を出して止まる
             self.get_logger().error(
@@ -217,6 +227,16 @@ class AutoTargetGenerator(LifecycleNode):
         self._publish_status(cmd, dets)
         if dets is not None:
             self._save(now, frame, dets, cmd)
+
+    def _reload_detector(self) -> None:
+        params, err = self._watcher.poll()
+        if err:
+            self.get_logger().error(err, throttle_duration_sec=10.0)
+        elif params is not None:
+            ranges = {c: [(r.lo, r.hi) for r in rs] for c, rs in params.colors.items()}
+            self.get_logger().info(
+                f'色の設定を読み直した: {self._watcher.path} {ranges}'
+            )
 
     def _publish(self, cmd: Command) -> None:
         target = Target()

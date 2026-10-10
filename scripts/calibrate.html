@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>色合わせ</title>
+<style>
+  :root { --bg:#111; --fg:#eee; --muted:#9a9a9a; --line:#333; --accent:#4aa3ff;
+          --yellow:#ffd400; --red:#ff3b30; --blue:#2f80ff; --background:#bbb; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.6 system-ui, sans-serif; }
+  .wrap { max-width:1150px; margin:0 auto; padding:12px 16px 40px; }
+  .howto { background:#1b1b1b; border:1px solid var(--line); border-radius:6px; padding:10px 14px; margin-bottom:12px; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:8px 0; }
+  .main { display:flex; gap:16px; flex-wrap:wrap; }
+  .left { flex:1 1 640px; min-width:0; }
+  .right { flex:0 0 360px; min-width:0; }
+  img { width:100%; height:auto; display:block; background:#000; border-radius:4px; cursor:crosshair; }
+  button { background:#2a2a2a; color:var(--fg); border:1px solid #444; border-radius:6px; padding:6px 12px; font-size:14px; cursor:pointer; }
+  button.on { outline:2px solid var(--accent); }
+  button.primary { background:var(--accent); color:#000; border-color:var(--accent); font-weight:600; }
+  .lab { min-width:72px; }
+  .lab .dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; }
+  kbd { background:#2a2a2a; border:1px solid #555; border-radius:3px; padding:0 5px; font-size:12px; }
+  table { border-collapse:collapse; width:100%; font-size:13px; }
+  td, th { padding:2px 4px; text-align:center; }
+  td input { width:46px; background:#222; color:var(--fg); border:1px solid #444; border-radius:3px; text-align:right; }
+  .muted { color:var(--muted); font-size:13px; }
+  #msg { min-height:1.5em; color:#ffd27a; }
+  #strip { display:flex; flex-wrap:wrap; gap:2px; margin-top:8px; }
+  #strip span { width:10px; height:18px; background:#333; cursor:pointer; position:relative; }
+  #strip span.cur { outline:2px solid var(--accent); }
+  #strip i { position:absolute; left:0; right:0; height:5px; }
+  input[type=text] { background:#222; color:var(--fg); border:1px solid #444; border-radius:4px; padding:4px 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="howto">
+    <b>やること</b>: ① 色を選ぶ（<kbd>1</kbd>黄 <kbd>2</kbd>赤 <kbd>3</kbd>青 <kbd>4</kbd>背景）→ 画像の上の<b>風船の中</b>をクリック。
+    いろいろなコマ・距離・明るさの風船で、色ごとに 5〜10 か所。
+    <b>背景</b>（壁・床・水面・まぎらわしい物）も同じくらいクリックすると、背景を拾わないように締めてくれる。<br>
+    ② <b>提案</b> を押す → ③ <kbd>M</kbd> でマスク表示にして、<kbd>←</kbd><kbd>→</kbd> で色々なコマを見る。
+    <b>全コマで確認</b> で、どのコマで何を拾ったかが下のマスに出る。④ 良ければ名前を付けて <b>保存</b>。<br>
+    <span class="muted">間違えたら <kbd>Z</kbd> で 1 つ取り消し。右の表の数字を直接直してもよい（H は 0〜179、S と V は 0〜255）。<br>
+    <b>保存すると機体の current.json が置き換わり、auto_target_generator が 1 秒以内に読み直す</b>（detector_config を current.json にしている場合）。
+    撮り直したら「最新の撮影を読み込む」。</span>
+  </div>
+
+  <div class="row">
+    <span id="name" class="muted"></span>
+    <span id="pos" class="muted"></span>
+    <button id="prev">← 前</button><button id="next">次 →</button>
+    <button id="view">マスク表示 (M)</button>
+    <label class="muted">クリックの大きさ <input id="brush" type="range" min="0.005" max="0.04" step="0.005" value="0.015"></label>
+  </div>
+
+  <div class="main">
+    <div class="left">
+      <img id="img" alt="">
+      <div id="strip"></div>
+      <div class="muted">下のマス: 黄・赤・青の線 = そのコマで検出あり（「全コマで確認」を押したとき）。マスを押すとそのコマへ。</div>
+    </div>
+    <div class="right">
+      <div class="row" id="labels"></div>
+      <div class="muted" id="counts"></div>
+      <div class="row">
+        <button id="undo">取り消し (Z)</button>
+        <button id="propose" class="primary">提案</button>
+        <button id="summary">全コマで確認</button>
+        <button id="reload">最新の撮影を読み込む</button>
+      </div>
+      <div id="msg"></div>
+      <table>
+        <thead><tr><th></th><th>H 下</th><th>S 下</th><th>V 下</th><th>H 上</th><th>S 上</th><th>V 上</th></tr></thead>
+        <tbody id="ranges"></tbody>
+      </table>
+      <div class="row" style="margin-top:14px">
+        <input id="saveName" type="text" placeholder="例: jamstec_1017">
+        <button id="save">保存</button>
+      </div>
+      <div class="muted" id="base"></div>
+    </div>
+  </div>
+</div>
+<script>
+const LABELS = { yellow: "黄", red: "赤", blue: "青", background: "背景" };
+const ORDER = ["yellow", "red", "blue", "background"];
+let st, i = 0, label = "yellow", view = "image", hits = {};
+const $ = (id) => document.getElementById(id);
+const msg = (t) => { $("msg").textContent = t; };
+
+async function api(path, body) {
+  const r = await fetch(path, body === undefined ? {} : { method: "POST", body: JSON.stringify(body) });
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+}
+
+async function load() {
+  st = await api("/api/state");
+  $("base").textContent = `画像: ${st.source} / 元の設定: ${st.base}（色以外の値はこれを使う） / 保存先: ${st.out_dir}`;
+  ORDER.forEach((l, k) => {
+    const b = document.createElement("button");
+    b.className = "lab"; b.dataset.l = l;
+    b.innerHTML = `<span class="dot" style="background:var(--${l})"></span>${k + 1} ${LABELS[l]}`;
+    b.onclick = () => { label = l; renderLabels(); };
+    $("labels").appendChild(b);
+  });
+  renderLabels(); renderCounts(st.counts); renderRanges(st.ranges); render();
+}
+
+function renderLabels() {
+  for (const b of document.querySelectorAll(".lab")) b.classList.toggle("on", b.dataset.l === label);
+}
+function renderCounts(c) {
+  $("counts").textContent = "集めた画素: " + ORDER.map((l) => `${LABELS[l]} ${c[l]}`).join(" / ");
+}
+function renderRanges(ranges) {
+  const tb = $("ranges"); tb.innerHTML = "";
+  for (const c of ["yellow", "red", "blue"]) {
+    (ranges[c] || []).forEach((r, k) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td><span style="color:var(--${c})">${LABELS[c]}${ranges[c].length > 1 ? k + 1 : ""}</span></td>` +
+        [...r.lo, ...r.hi].map((v, j) => `<td><input data-c="${c}" data-k="${k}" data-j="${j}" value="${v}"></td>`).join("");
+      tb.appendChild(tr);
+    });
+  }
+  for (const inp of tb.querySelectorAll("input")) inp.onchange = applyEdits;
+  st.ranges = ranges;
+}
+async function applyEdits() {
+  const ranges = JSON.parse(JSON.stringify(st.ranges));
+  for (const inp of $("ranges").querySelectorAll("input")) {
+    const r = ranges[inp.dataset.c][+inp.dataset.k];
+    const j = +inp.dataset.j, v = Math.round(+inp.value);
+    (j < 3 ? r.lo : r.hi)[j % 3] = v;
+  }
+  try { renderRanges((await api("/api/ranges", { ranges })).ranges); render(); msg(""); }
+  catch (e) { msg("直せない: " + e.message); }
+}
+
+function render() {
+  $("img").src = `/api/render?i=${i}&view=${view}&t=${Date.now()}`;
+  $("name").textContent = st.frames[i];
+  $("pos").textContent = `${i + 1} / ${st.frames.length}`;
+  $("view").textContent = view === "mask" ? "画像表示 (M)" : "マスク表示 (M)";
+  const strip = $("strip"); strip.innerHTML = "";
+  st.frames.forEach((_, k) => {
+    const s = document.createElement("span");
+    if (k === i) s.className = "cur";
+    ["yellow", "red", "blue"].forEach((c, n) => {
+      if ((hits[c] || []).includes(k)) {
+        const m = document.createElement("i");
+        m.style.top = `${n * 6}px`; m.style.background = `var(--${c})`;
+        s.appendChild(m);
+      }
+    });
+    s.title = st.frames[k];
+    s.onclick = () => { i = k; render(); };
+    strip.appendChild(s);
+  });
+}
+
+$("img").onclick = async (e) => {
+  const rect = e.target.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / rect.width, y = (e.clientY - rect.top) / rect.height;
+  try { renderCounts((await api("/api/click", { label, i, x, y, r: +$("brush").value })).counts); render(); }
+  catch (err) { msg(err.message); }
+};
+async function undo() { renderCounts((await api("/api/undo", {})).counts); render(); }
+async function proposeAll() {
+  try {
+    const r = await api("/api/propose", {});
+    renderRanges(r.ranges); render();
+    msg(Object.entries(r.result).map(([c, v]) => v.skipped ? `${LABELS[c]}: ${v.skipped}` :
+      `${LABELS[c]}: 風船の画素の ${Math.round(v.keep * 100)}% を拾う` +
+      (v.bg_in === null ? "（背景のクリック無し）" : `、背景の ${Math.round(v.bg_in * 100)}% を拾う`)).join(" / "));
+  } catch (e) { msg(e.message); }
+}
+async function summary() {
+  msg("全コマで検出中…");
+  hits = await api("/api/summary");
+  const n = st.frames.length;
+  msg("検出のあったコマ: " + ["yellow", "red", "blue"].map((c) => `${LABELS[c]} ${(hits[c] || []).length}/${n}`).join(" / "));
+  render();
+}
+$("prev").onclick = () => { i = Math.max(0, i - 1); render(); };
+$("next").onclick = () => { i = Math.min(st.frames.length - 1, i + 1); render(); };
+$("view").onclick = () => { view = view === "mask" ? "image" : "mask"; render(); };
+$("undo").onclick = undo;
+$("propose").onclick = proposeAll;
+$("summary").onclick = summary;
+$("save").onclick = async () => {
+  try {
+    const r = await api("/api/save", { name: $("saveName").value });
+    msg(`保存しました: ${r.path}（${r.current} も置き換えた。ノードが自動で読み直す）`);
+  } catch (e) { msg("保存できない: " + e.message); }
+};
+$("reload").onclick = async () => {
+  try {
+    const r = await api("/api/reload", {});
+    msg(`読み込み直しました: ${r.source}（${r.frames} コマ）。クリックは消えた`);
+    st = await api("/api/state"); i = 0; hits = {};
+    $("base").textContent = `画像: ${st.source} / 元の設定: ${st.base}（色以外の値はこれを使う） / 保存先: ${st.out_dir}`;
+    renderCounts(st.counts); render();
+  } catch (e) { msg("読み込めない: " + e.message); }
+};
+document.addEventListener("keydown", (e) => {
+  if (e.target.tagName === "INPUT") return;
+  const k = e.key;
+  if ("1234".includes(k) && k.length === 1) { label = ORDER[+k - 1]; renderLabels(); }
+  else if (k === "ArrowRight") $("next").click();
+  else if (k === "ArrowLeft") $("prev").click();
+  else if (k === "m" || k === "M") $("view").click();
+  else if (k === "z" || k === "Z") undo();
+  else return;
+  e.preventDefault();
+});
+load();
+</script>
+</body>
+</html>
