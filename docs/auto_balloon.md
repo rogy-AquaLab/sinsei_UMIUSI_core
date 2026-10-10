@@ -86,15 +86,16 @@ python3 -m pytest test/python
 
 画像を PC に送らずに、機体の上で色合わせできる:
 
-1. 初回だけ: `config/auto_target_generator.yaml` の `detector_config` を `"/home/pi/umiusi_balloon/current.json"`
-   （絶対パス）にする。`current.json` が無いとノードが起動しないので、先に 2〜4 を一度やっておく
+1. 何も設定しなくてよい: ノードは既定で `~/umiusi_balloon/current.json` を読み、無ければ同梱の `normal.json` で動く。
+   **UI の前カメラの左上に「色の設定: current.json」と出ていれば、色合わせの結果で動いている**
+   （「normal.json（予備）」なら、まだ色合わせの結果を読んでいない）
 2. 撮る（どのモードでもよい。手動で機体を回しながら、3 色の風船を近く・遠く、背景も入れて 1 分ほど）:
 
    ```bash
    python3 scripts/capture_frames.py
    ```
 
-   `~/umiusi_balloon/capture/<日時>/` に 0.5 秒ごとに保存される。Ctrl-C で止める
+   `~/umiusi_balloon/capture/<日時>/` に 0.5 秒ごとに PNG で保存される（JPEG だと色がにじんで、走行中とずれる）。Ctrl-C で止める
 3. 色合わせの画面を機体で起動し、**ノート PC のブラウザで `http://<機体のホスト名>.local:8766` を開く**:
 
    ```bash

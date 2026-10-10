@@ -112,7 +112,9 @@ class AutoTargetGenerator(LifecycleNode):
         super().__init__('auto_target_generator')
         self.declare_parameter('camera_source', DEFAULT_CAMERA)
         # ファイル名だけなら share/sinsei_umiusi_core/config/balloon/ から探す。絶対パスならそのまま
-        self.declare_parameter('detector_config', 'normal.json')
+        # 色合わせの道具（scripts/calibrate_server.py）が保存する current.json を既定にする。
+        # 無ければ同梱の normal.json で動き、できたら切り替える
+        self.declare_parameter('detector_config', '~/umiusi_balloon/current.json')
         # 色の設定ファイルの更新を見る周期 [s]。変わっていたら読み直す（色合わせの結果をそのまま反映する）。0 で見ない
         self.declare_parameter('detector_reload_period', 1.0)
         self.declare_parameter('rate_hz', 10.0)
@@ -147,7 +149,7 @@ class AutoTargetGenerator(LifecycleNode):
         )
         try:
             share = Path(get_package_share_directory('sinsei_umiusi_core'))
-            detector_config = Path(self._param('detector_config'))
+            detector_config = Path(self._param('detector_config')).expanduser()
             if not detector_config.is_absolute():
                 detector_config = share / 'config' / 'balloon' / detector_config
             # 読めなくても起動は失敗させない（未構成で残ると AUTO に入った瞬間にプロセスごと落ちる）。
@@ -266,6 +268,12 @@ class AutoTargetGenerator(LifecycleNode):
                 'hold_yaw': cmd.hold_yaw,
             },
             'new_frame': dets is not None,
+            # 今使っている色の設定（current.json を読めず同梱の設定で動いているなら fallback）
+            'config': {
+                'file': self._watcher.loaded_from.name,
+                'loaded_at': round(self._watcher.loaded_at, 1),
+                'fallback': self._watcher.startup_error is not None,
+            },
             'detections': [
                 {
                     'color': d.color,

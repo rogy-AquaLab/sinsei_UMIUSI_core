@@ -75,9 +75,8 @@ def main() -> None:
                 continue
             if now - last >= args.every:
                 last = now
-                cv2.imwrite(
-                    str(out / f'{n:05d}.jpg'), frame, [cv2.IMWRITE_JPEG_QUALITY, 92]
-                )
+                # PNG（JPEG だと色がにじみ、色合わせの値が走行中の映像とずれる）
+                cv2.imwrite(str(out / f'{n:05d}.png'), frame)
                 n += 1
                 if n % 20 == 0:
                     print(f'{n} 枚')

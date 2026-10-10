@@ -82,3 +82,15 @@ def test_broken_at_startup_uses_fallback(tmp_path):
     current.write_text('{ broken')
     w = ConfigWatcher(current, fallback=fallback)
     assert w.params.colors['yellow'][0].lo[0] == 12
+
+
+def test_reports_where_params_came_from(tmp_path):
+    fallback = tmp_path / 'normal.json'
+    write(fallback, 12)
+    current = tmp_path / 'current.json'
+    w = ConfigWatcher(current, fallback=fallback)
+    assert w.loaded_from == fallback
+    t0 = w.loaded_at
+    write(current, 25)
+    w.poll()
+    assert w.loaded_from == current and w.loaded_at >= t0

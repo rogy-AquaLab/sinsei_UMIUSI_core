@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import time
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -21,6 +22,9 @@ class ConfigWatcher:
         self.path = Path(path)
         # 最初に読めなかったときの説明（fallback で動いている間だけ入る）
         self.startup_error: Optional[str] = None
+        # 今の設定を読んだファイルと時刻（UI に出す）
+        self.loaded_from: Path = self.path
+        self.loaded_at: float = time.time()
         try:
             self.params: DetectorParams = load_params(self.path)
             self._stamp: Optional[Tuple[int, int]] = self._stat()
@@ -29,6 +33,7 @@ class ConfigWatcher:
                 raise
             self.params = load_params(fallback)
             self._stamp = None
+            self.loaded_from = Path(fallback)
             self.startup_error = f'{self.path} を読めないので {fallback} で動く: {e}'
 
     def _stat(self) -> Tuple[int, int]:
@@ -52,4 +57,6 @@ class ConfigWatcher:
             return None, f'設定ファイルを読めない（前の設定のまま）: {e}'
         self.params = params
         self.startup_error = None
+        self.loaded_from = self.path
+        self.loaded_at = time.time()
         return params, None

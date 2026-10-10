@@ -5,11 +5,10 @@
   ros__parameters:
     # 共有メモリ（control の cameras_shm.yaml）。動画ファイルのパスを入れると再生で試せる
     camera_source: "shmsrc socket-path=/tmp/umiusi_cam1.sock is-live=true ! video/x-raw,format=BGR,width=320,height=240 ! appsink drop=true max-buffers=1 sync=false"
-    # 色のしきい値。ファイル名だけなら config/balloon/ から探す。絶対パスも可。
-    # 色合わせ（scripts/calibrate_server.py）をするなら、その保存先の current.json を絶対パスで指す
-    # （例: "/home/pi/umiusi_balloon/current.json"）。保存するたびに自動で読み直す。
-    # noir.json / normal.json は叩き台
-    detector_config: "normal.json"
+    # 色のしきい値。色合わせの道具（scripts/calibrate_server.py）が保存する current.json を読む。
+    # 無ければ同梱の normal.json で動き、保存されたら切り替える（1 秒ごとに見る）。
+    # ファイル名だけなら config/balloon/ から探す（例: "normal.json"）。~ も使える
+    detector_config: "~/umiusi_balloon/current.json"
     detector_reload_period: 1.0
     rate_hz: 10.0
     max_frame_age: 0.5
