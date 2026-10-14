@@ -258,6 +258,13 @@ class AutoTargetGenerator(LifecycleNode):
         dets, _ = detect(frame, params)
         return dets
 
+    def _using_cnn(self) -> bool:
+        return (
+            self._param('detector') == 'cnn'
+            and self._cnn is not None
+            and self._cnn[1] is not None
+        )
+
     def _cnn_model(self):
         """cnn_model を読む（パスが変わったときだけ読み直す）。読めなければ None（色の検出で続ける）。"""
         path = Path(self._param('cnn_model')).expanduser()
@@ -309,9 +316,9 @@ class AutoTargetGenerator(LifecycleNode):
                 'hold_yaw': cmd.hold_yaw,
             },
             'new_frame': dets is not None,
-            'detector': 'cnn'
-            if self._param('detector') == 'cnn' and self._cnn and self._cnn[1]
-            else 'hsv',
+            # 今使っている検出のしかたとモデル名（CNN を読めず色の検出で続けているなら hsv）
+            'detector': 'cnn' if self._using_cnn() else 'hsv',
+            'cnn_model': self._cnn[0].name if self._using_cnn() else None,
             # 今使っている色の設定（current.json を読めず同梱の設定で動いているなら fallback）
             'config': {
                 'file': self._watcher.loaded_from.name,
