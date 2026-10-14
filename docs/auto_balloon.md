@@ -115,3 +115,25 @@ python3 -m pytest test/python
 - 撮影スクリプトとノードは同じ共有メモリを同時に読む（GStreamer の shmsink は複数の読み手を受け付ける。実機で要確認）
 - 提案の計算は `sinsei_umiusi_core/balloon/calibrate.py`（色相は外れ値を除いて余白を足す。赤は 0/179 をまたぐので 2 つ。
   S と V は下限だけで、背景のクリックが 5% 以下しか入らなくなるまで上げる）
+
+## CNN で検出する（色合わせ不要）
+
+色のしきい値の代わりに、学習した CNN（umiusi_sim の TinyBalloonNet、ONNX）でも検出できる。色合わせは要らない。
+`detector` で切り替え、走行中でも切り替わる（行動決定はどちらでも同じ）:
+
+```bash
+ros2 param set /auto_target_generator detector cnn   # 戻すときは hsv
+ros2 param set /auto_target_generator cnn_model balloon_cnn_20261015.onnx
+```
+
+- モデルは `config/balloon/models/`。`balloon_cnn_20261007.onnx` = 実機の autonomy で使ってきたもの（既定）、
+  `balloon_cnn_20261015.onnx` = ラベルを直して学び直したもの（JAMSTEC の映像で F1 0.32 → 0.58、反射の誤検出 78 → 26、
+  10/03 は 0.56 で同じ。実機では未確認）
+- `cnn_conf`（既定 0.3）より確信度の低い検出は捨てる。0.4 にすると濁ったプール（10/03）でほぼ全部消える
+- CNN を読めなければログに出して色の検出で続ける。`~/status` の `detector` が今使っている方、検出ごとの `s` が確信度
+- 推論は onnxruntime があればそれ（2 スレッド）、無ければ OpenCV の dnn。結果は同じ（OpenCV 4.6 で確認）。
+  x86（Ryzen 5 3500U）で 1 枚 12〜21 ms。Pi では未計測
+- `radius` は色の検出器に合わせて「本来の比率に戻した画像で、箱の長い辺の半分 / 画像幅」。
+  `source_aspect` は `detector_config` の値を使う。近さのしきい値（`ram_radius` など）は色の検出器で決めたものなので、
+  CNN の箱が風船より少し大きく / 小さく出ると突っ込む距離が変わる。プールで確かめる
+- 復号は `sinsei_umiusi_core/balloon/cnn.py`。学習側（umiusi_sim `learned_detector.decode`）と 44 枚で検出が一致する

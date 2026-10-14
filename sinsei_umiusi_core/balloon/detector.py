@@ -38,6 +38,8 @@ class Detection:
     solidity: float
     # 作業解像度でのバウンディングボックス (x, y, w, h)
     bbox: Tuple[int, int, int, int]
+    # 確信度（CNN の検出だけ。色の検出は 1）
+    score: float = 1.0
 
 
 def gray_world(bgr: np.ndarray, max_gain: float) -> np.ndarray:

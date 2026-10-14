@@ -19,6 +19,7 @@ from rclpy.timer import Timer
 from std_msgs.msg import String
 
 from sinsei_umiusi_core.balloon import detect
+from sinsei_umiusi_core.balloon.cnn import CnnDetector, detect_cnn
 from sinsei_umiusi_core.balloon.config_watch import ConfigWatcher
 from sinsei_umiusi_core.balloon.mission import (
     BalloonMission,
@@ -117,6 +118,13 @@ class AutoTargetGenerator(LifecycleNode):
         self.declare_parameter('detector_config', '~/umiusi_balloon/current.json')
         # 色の設定ファイルの更新を見る周期 [s]。変わっていたら読み直す（色合わせの結果をそのまま反映する）。0 で見ない
         self.declare_parameter('detector_reload_period', 1.0)
+        # 'hsv' = 色のしきい値（detector_config の色）、'cnn' = 学習した CNN（cnn_model）。走行中に切り替えてよい。
+        # CNN を読めなければ hsv で続ける
+        self.declare_parameter('detector', 'hsv')
+        # ファイル名だけなら share/sinsei_umiusi_core/config/balloon/models/ から探す。絶対パスならそのまま
+        self.declare_parameter('cnn_model', 'balloon_cnn_20261007.onnx')
+        # 確信度の下限。濁ったプールでは 0.4 にすると全部消える（10/03）ので上げすぎない
+        self.declare_parameter('cnn_conf', 0.3)
         self.declare_parameter('rate_hz', 10.0)
         # これより古いフレームは使わない [s]
         self.declare_parameter('max_frame_age', 0.5)
@@ -149,6 +157,8 @@ class AutoTargetGenerator(LifecycleNode):
         )
         try:
             share = Path(get_package_share_directory('sinsei_umiusi_core'))
+            self._models_dir = share / 'config' / 'balloon' / 'models'
+            self._cnn = None  # (パス, CnnDetector)。読めなかったら (パス, None)
             detector_config = Path(self._param('detector_config')).expanduser()
             if not detector_config.is_absolute():
                 detector_config = share / 'config' / 'balloon' / detector_config
@@ -191,6 +201,8 @@ class AutoTargetGenerator(LifecycleNode):
         self._camera.start()
         self._last_seq = 0
         self._mission.reset(time.monotonic())
+        if self._param('detector') == 'cnn':
+            self._cnn_model()  # 最初のフレームで待たないよう先に読む
         self._open_save_dir()
         self._timer.reset()
         self.get_logger().info('activate: 風船割りを開始（WAIT から）')
@@ -223,7 +235,7 @@ class AutoTargetGenerator(LifecycleNode):
             fresh = now - t_frame <= self._param('max_frame_age')
             if seq != self._last_seq and frame is not None and fresh:
                 self._last_seq = seq
-                dets, _ = detect(frame, self._watcher.params)
+                dets = self._detect(frame)
             cmd = self._mission.step(now, dets)
         except Exception as e:  # noqa: BLE001 何が起きても推力 0 を出して止まる
             self.get_logger().error(
@@ -235,6 +247,35 @@ class AutoTargetGenerator(LifecycleNode):
         self._publish_status(cmd, dets)
         if dets is not None:
             self._save(now, frame, dets, cmd)
+
+    def _detect(self, frame):
+        params = self._watcher.params
+        if self._param('detector') == 'cnn':
+            model = self._cnn_model()
+            if model is not None:
+                model.conf = self._param('cnn_conf')
+                return detect_cnn(frame, model, params)
+        dets, _ = detect(frame, params)
+        return dets
+
+    def _cnn_model(self):
+        """cnn_model を読む（パスが変わったときだけ読み直す）。読めなければ None（色の検出で続ける）。"""
+        path = Path(self._param('cnn_model')).expanduser()
+        if not path.is_absolute():
+            path = self._models_dir / path
+        if self._cnn is None or self._cnn[0] != path:
+            try:
+                model = CnnDetector(path, self._param('cnn_conf'))
+                self.get_logger().info(
+                    f'CNN を読んだ: {path}（{model.backend}、入力 {model.input_size}）'
+                )
+            except Exception as e:  # noqa: BLE001 読めなくても止まらない
+                model = None
+                self.get_logger().error(
+                    f'CNN を読めない（色の検出で続ける）: {path}: {e}'
+                )
+            self._cnn = (path, model)
+        return self._cnn[1]
 
     def _reload_detector(self) -> None:
         params, err = self._watcher.poll()
@@ -268,6 +309,9 @@ class AutoTargetGenerator(LifecycleNode):
                 'hold_yaw': cmd.hold_yaw,
             },
             'new_frame': dets is not None,
+            'detector': 'cnn'
+            if self._param('detector') == 'cnn' and self._cnn and self._cnn[1]
+            else 'hsv',
             # 今使っている色の設定（current.json を読めず同梱の設定で動いているなら fallback）
             'config': {
                 'file': self._watcher.loaded_from.name,
@@ -280,6 +324,7 @@ class AutoTargetGenerator(LifecycleNode):
                     'x': round(d.x, 3),
                     'y': round(d.y, 3),
                     'r': round(d.radius, 4),
+                    's': round(d.score, 3),
                 }
                 for d in dets or []
             ],
@@ -320,7 +365,8 @@ class AutoTargetGenerator(LifecycleNode):
                 'state': cmd.state,
                 'target': cmd.target,
                 'detections': [
-                    {'color': d.color, 'x': d.x, 'y': d.y, 'r': d.radius} for d in dets
+                    {'color': d.color, 'x': d.x, 'y': d.y, 'r': d.radius, 's': d.score}
+                    for d in dets
                 ],
             }
             self._save_log.write(json.dumps(line) + '\n')
