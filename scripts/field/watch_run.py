@@ -1,6 +1,9 @@
 """1 秒ごとに robot_state・クライアント数・自律の状態・指令を記録する（rosbridge を使わない）。usage: watch_run.py <out.tsv>"""
 
-import json, sys, time, rclpy
+import json
+import sys
+import time
+import rclpy
 from std_msgs.msg import Int32, String
 from sinsei_umiusi_msgs.msg import RobotState, Target
 

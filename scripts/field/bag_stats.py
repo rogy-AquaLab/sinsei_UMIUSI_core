@@ -1,6 +1,9 @@
 """auto_target_generator/status を bag から集計する。usage: bag_stats.py <bag_dir>..."""
 
-import json, sys, collections, statistics
+import json
+import sys
+import collections
+import statistics
 import rosbag2_py
 from rclpy.serialization import deserialize_message
 from std_msgs.msg import String
@@ -52,7 +55,9 @@ for bag in sys.argv[1:]:
         if run[-1][0] - run[0][0] < 5:
             continue
         st = [s['state'] for _, s in run]
-        trans = collections.Counter((a, b) for a, b in zip(st, st[1:]) if a != b)
+        trans = collections.Counter(
+            (a, b) for a, b in zip(st, st[1:], strict=False) if a != b
+        )
         det = collections.Counter(s.get('detector') for _, s in run)
         newf = [s for _, s in run if s['new_frame']]
         hit = sum(
@@ -67,13 +72,13 @@ for bag in sys.argv[1:]:
         yaw = [s['cmd']['yaw_rate'] for _, s in run if s['state'] == 'APPROACH']
         flips = sum(
             1
-            for a, b in zip(yaw, yaw[1:])
+            for a, b in zip(yaw, yaw[1:], strict=False)
             if a * b < 0 and abs(a) > 0.05 and abs(b) > 0.05
         )
         dur = run[-1][0] - run[0][0]
         gaps = [b[0] - a[0] for a, b in zip(newf, newf[1:])] if False else []
         nf_t = [t for t, s in run if s['new_frame']]
-        g = sorted(b - a for a, b in zip(nf_t, nf_t[1:]))
+        g = sorted(b - a for a, b in zip(nf_t, nf_t[1:], strict=False))
         print(
             f'  -- 走行 {dur:.0f}s 検出器 {dict(det)}  新コマ {len(newf) / dur:.1f}/s  コマ間隔 中央 {g[len(g) // 2] * 1e3:.0f}ms 90% {g[int(len(g) * 0.9)] * 1e3:.0f}ms 最大 {g[-1] * 1e3:.0f}ms'
             if g
