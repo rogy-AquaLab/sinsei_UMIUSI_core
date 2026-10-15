@@ -22,6 +22,7 @@ from std_msgs.msg import String
 from sinsei_umiusi_core.balloon import detect
 from sinsei_umiusi_core.balloon.cnn import CnnDetector, detect_cnn
 from sinsei_umiusi_core.balloon.config_watch import ConfigWatcher
+from sinsei_umiusi_core.balloon.reflection import split_reflection
 from sinsei_umiusi_core.balloon.mission import (
     BalloonMission,
     Command,
@@ -128,6 +129,9 @@ class AutoTargetGenerator(LifecycleNode):
         self.declare_parameter('cnn_conf', 0.3)
         # 推論のスレッド数（onnxruntime / OpenCV）。Pi では 2 が一番速い
         self.declare_parameter('cnn_threads', 2)
+        # 水面の鏡像とつながった縦長の検出（高さ / 幅 > reflection_aspect）を、下側の本物の風船に直す
+        self.declare_parameter('reflection_split', True)
+        self.declare_parameter('reflection_aspect', 1.3)
         self.declare_parameter('rate_hz', 10.0)
         # これより古いフレームは使わない [s]
         self.declare_parameter('max_frame_age', 0.5)
@@ -319,12 +323,18 @@ class AutoTargetGenerator(LifecycleNode):
 
     def _detect(self, frame):
         params = self._watcher.params
+        dets = None
         if self._param('detector') == 'cnn':
             model = self._cnn_model()
             if model is not None:
                 model.conf = self._param('cnn_conf')
-                return detect_cnn(frame, model, params)
-        dets, _ = detect(frame, params)
+                dets = detect_cnn(frame, model, params)
+        if dets is None:
+            dets, _ = detect(frame, params)
+        if self._param('reflection_split'):
+            dets = split_reflection(
+                dets, params, frame.shape, self._param('reflection_aspect')
+            )
         return dets
 
     def _using_cnn(self) -> bool:
