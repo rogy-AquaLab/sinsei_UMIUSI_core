@@ -14,6 +14,7 @@ import rclpy
 from ament_index_python.packages import get_package_share_directory
 from rclpy.lifecycle import LifecycleNode, LifecycleState, TransitionCallbackReturn
 from rclpy.node import Publisher
+from rclpy.parameter import Parameter
 from rclpy.qos import qos_profile_default as QOS_PROFILE_DEFAULT
 from rclpy.timer import Timer
 from std_msgs.msg import String
@@ -129,6 +130,11 @@ class AutoTargetGenerator(LifecycleNode):
         # 空でなければ、activate ごとにフォルダを作り、生フレームと検出結果を残す（色合わせ用）
         self.declare_parameter('save_dir', '')
         self.declare_parameter('save_every', 0.5)  # [s]
+        # Auto に入った時刻（time.monotonic の秒）。robot_strategy が activate の前に入れる。
+        # ノードが落ちて立ち上がり直したとき、持ち時間をこの時刻から数え続けるため。0 なら activate の時刻
+        self.declare_parameter('run_started_at', 0.0)
+        # Auto でない間も認識だけ回して ~/status（state PREVIEW）に出す。推力は出さない（UI で認識を確かめる用）
+        self.declare_parameter('preview', False)
         for f in fields(MissionParams):
             default = getattr(MissionParams(), f.name)
             self.declare_parameter(
@@ -170,6 +176,11 @@ class AutoTargetGenerator(LifecycleNode):
             1.0 / self._param('rate_hz'), self._tick, autostart=False
         )
         self._camera = None
+        self._active = False
+        self._last_seq = 0
+        self._preview_timer: Timer = self.create_timer(
+            1.0 / self._param('rate_hz'), self._preview_tick
+        )
         self._save_log = None
         self._reload_timer: Timer | None = None
         if self._param('detector_reload_period') > 0:
@@ -182,8 +193,8 @@ class AutoTargetGenerator(LifecycleNode):
 
     def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
         self._publish(Command())
-        self._camera = CameraReader(self._param('camera_source'), self.get_logger())
-        self._camera.start()
+        self._active = True
+        self._ensure_camera()
         self._last_seq = 0
         # AUTO に入るたびに読み直す（ros2 param set で持ち時間などを変えたら、次の AUTO から効く）
         try:
@@ -194,7 +205,17 @@ class AutoTargetGenerator(LifecycleNode):
             self.get_logger().error(
                 f'mission のパラメータを読めない。前の値で走る: {e}'
             )
-        self._mission.reset(time.monotonic())
+        now = time.monotonic()
+        t0 = self._param('run_started_at')
+        p = self._mission.p
+        if 0.0 < t0 <= now and now - t0 < p.start_delay + p.mission_time:
+            if now - t0 > 1.0:
+                self.get_logger().warning(
+                    f'Auto に入ってから {now - t0:.1f} 秒経っている。その時刻から持ち時間を数え続ける'
+                )
+        else:
+            t0 = now
+        self._mission.reset(t0)
         self._open_save_dir()
         self._timer.reset()
         p = self._mission.p
@@ -211,15 +232,17 @@ class AutoTargetGenerator(LifecycleNode):
 
     def on_deactivate(self, state: LifecycleState) -> TransitionCallbackReturn:
         self._timer.cancel()
+        self._active = False
         self._publish(Command())
-        if self._camera is not None:
-            self._camera.stop()
-            self._camera = None
+        self._stop_camera()
+        # 次の Auto で前の時刻を使わない（robot_strategy が入れ損ねても、その時刻から数える）
+        self.set_parameters([Parameter('run_started_at', value=0.0)])
         self._close_save_dir()
         return TransitionCallbackReturn.SUCCESS
 
     def on_cleanup(self, state: LifecycleState) -> TransitionCallbackReturn:
-        for timer in (self._timer, self._reload_timer):
+        self._stop_camera()
+        for timer in (self._timer, self._reload_timer, self._preview_timer):
             if timer is not None and not self.destroy_timer(timer):
                 self.get_logger().warning('Failed to destroy timer')
         for pub in (self._target_pub, self._attitude_target_pub, self._status_pub):
@@ -248,6 +271,37 @@ class AutoTargetGenerator(LifecycleNode):
         self._publish_status(cmd, dets)
         if dets is not None:
             self._save(now, frame, dets, cmd)
+
+    def _ensure_camera(self) -> None:
+        if self._camera is None:
+            self._camera = CameraReader(self._param('camera_source'), self.get_logger())
+            self._camera.start()
+
+    def _stop_camera(self) -> None:
+        if self._camera is not None:
+            self._camera.stop()
+            self._camera = None
+
+    def _preview_tick(self) -> None:
+        """Auto でない間の認識だけの表示。指令は出さない。"""
+        if self._active:
+            return
+        if not self._param('preview'):
+            self._stop_camera()
+            return
+        self._ensure_camera()
+        try:
+            seq, t_frame, frame = self._camera.latest()
+            if seq == self._last_seq or frame is None:
+                return
+            if time.monotonic() - t_frame > self._param('max_frame_age'):
+                return
+            self._last_seq = seq
+            dets, _ = detect(frame, self._watcher.params)
+        except Exception as e:  # noqa: BLE001 表示用なので止めない
+            self.get_logger().error(f'preview で例外: {e!r}', throttle_duration_sec=5.0)
+            return
+        self._publish_status(Command(state='PREVIEW'), dets)
 
     def _reload_detector(self) -> None:
         params, err = self._watcher.poll()

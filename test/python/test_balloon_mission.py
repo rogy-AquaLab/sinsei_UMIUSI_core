@@ -193,3 +193,15 @@ def test_mission_time_counts_from_start_not_from_auto():
     m.step(10.0, [])  # WAIT -> DIVE
     assert m.step(69.9, []).state != END
     assert m.step(70.0, []).state == END
+
+
+def test_resumed_mission_keeps_the_original_time_limit():
+    # ノードが立ち上がり直し、Auto に入った時刻 0 から 100 秒後に再開した
+    p = MissionParams(start_delay=10.0, mission_time=60.0)
+    m = BalloonMission(p)
+    m.reset(0.0)
+    assert m.step(100.0, []).state == END  # 10 + 60 を過ぎている
+    m.reset(0.0)
+    assert m.step(30.0, []).state == DIVE  # 待ちは済んでいるのですぐ動く
+    assert m.step(69.9, []).state != END
+    assert m.step(70.0, []).state == END
