@@ -24,3 +24,10 @@ launch:
       - node:
           pkg: "rosbridge_server"
           exec: "rosbridge_websocket"
+          # 切れた UI（無線が突然切れて TCP の切断が届かない）を数秒で数から外す。既定（ping なし）だと数分残り、
+          # /client_count が 0 にならない（2026-10-15 の無線の試験で約 2 分）。AUTO は切れても電源を保つので影響しない
+          param:
+            - name: websocket_ping_interval
+              value: 2.0
+            - name: websocket_ping_timeout
+              value: 5.0
