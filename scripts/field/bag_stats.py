@@ -76,7 +76,6 @@ for bag in sys.argv[1:]:
             if a * b < 0 and abs(a) > 0.05 and abs(b) > 0.05
         )
         dur = run[-1][0] - run[0][0]
-        gaps = [b[0] - a[0] for a, b in zip(newf, newf[1:])] if False else []
         nf_t = [t for t, s in run if s['new_frame']]
         g = sorted(b - a for a, b in zip(nf_t, nf_t[1:], strict=False))
         print(
