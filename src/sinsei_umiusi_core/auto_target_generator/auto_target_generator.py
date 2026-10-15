@@ -191,6 +191,11 @@ class AutoTargetGenerator(LifecycleNode):
         self.declare_parameter('cnn_threads', 2)
         # hsv+cnn で CNN の結果を使ってよい古さ [s]（CNN は遅いので、これより古い位置では狙わない）
         self.declare_parameter('cnn_assist_max_age', 0.5)
+        # hsv+cnn で使う CNN の検出の確信度の下限。CNN 単独（cnn_conf）より高くする:
+        # 色で何も見えていないときに、反射やタイルに自信を持った CNN を追わないため（2026-10-15 のプール）
+        self.declare_parameter('cnn_assist_conf', 0.5)
+        # true なら、CNN の直近 2 回の結果で同じ色がほぼ同じ位置（0.15 以内）にあるものだけ使う（一瞬だけの誤検出を落とす）
+        self.declare_parameter('cnn_assist_confirm', True)
         # 水面の鏡像とつながった縦長の検出（高さ / 幅 > reflection_aspect）を、下側の本物の風船に直す
         self.declare_parameter('reflection_split', True)
         self.declare_parameter('reflection_aspect', 1.3)
@@ -260,6 +265,7 @@ class AutoTargetGenerator(LifecycleNode):
             threading.Lock()
         )  # CNN は検出スレッドと補助スレッドの両方から使う
         self._assist_used = False
+        self._assist_prev = []  # 補助の CNN の前回の検出（続けて見えたかの判定用）
         self._det_ms = None
         self._active = False
         self._last_seq = 0
@@ -425,10 +431,28 @@ class AutoTargetGenerator(LifecycleNode):
         return dets
 
     def _assist_detect(self, frame):
-        """補助スレッドで回る。hsv+cnn のときだけ CNN を掛ける（それ以外は休む = None）。"""
+        """補助スレッドで回る。hsv+cnn のときだけ CNN を掛ける（それ以外は休む = None）。
+
+        確信度 cnn_assist_conf 以上で、cnn_assist_confirm なら前回も近くに同じ色があったものだけを返す。
+        """
         if self._param('detector') != 'hsv+cnn':
+            self._assist_prev = []
             return None
-        return self._run_cnn(frame)
+        dets = self._run_cnn(frame)
+        if dets is None:
+            return None
+        dets = [d for d in dets if d.score >= self._param('cnn_assist_conf')]
+        prev, self._assist_prev = self._assist_prev, dets
+        if not self._param('cnn_assist_confirm'):
+            return dets
+        return [
+            d
+            for d in dets
+            if any(
+                p.color == d.color and abs(p.x - d.x) <= 0.15 and abs(p.y - d.y) <= 0.15
+                for p in prev
+            )
+        ]
 
     def _run_cnn(self, frame):
         """CNN の検出（鏡像の補正つき）。CNN を読めなければ None。"""
