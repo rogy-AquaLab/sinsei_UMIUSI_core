@@ -18,6 +18,8 @@
     cnn_model: "balloon_cnn_20261007.onnx"
     # 確信度の下限。0.4 にすると濁ったプール（10/03）でほぼ全部消える
     cnn_conf: 0.3
+    # 推論のスレッド数。Pi で 2 が一番速い（4 だとカメラ・制御とコアを取り合う）
+    cnn_threads: 2
     rate_hz: 10.0
     # Auto でない間も認識だけ回して ~/status に出す（UI で認識を確かめる用。推力は出さない）
     preview: true

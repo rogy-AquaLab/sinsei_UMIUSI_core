@@ -126,6 +126,8 @@ class AutoTargetGenerator(LifecycleNode):
         self.declare_parameter('cnn_model', 'balloon_cnn_20261007.onnx')
         # 確信度の下限。濁ったプールでは 0.4 にすると全部消える（10/03）ので上げすぎない
         self.declare_parameter('cnn_conf', 0.3)
+        # 推論のスレッド数（onnxruntime / OpenCV）。Pi では 2 が一番速い
+        self.declare_parameter('cnn_threads', 2)
         self.declare_parameter('rate_hz', 10.0)
         # これより古いフレームは使わない [s]
         self.declare_parameter('max_frame_age', 0.5)
@@ -164,7 +166,7 @@ class AutoTargetGenerator(LifecycleNode):
         try:
             share = Path(get_package_share_directory('sinsei_umiusi_core'))
             self._models_dir = share / 'config' / 'balloon' / 'models'
-            self._cnn = None  # (パス, CnnDetector)。読めなかったら (パス, None)
+            self._cnn = None  # ((パス, スレッド数), CnnDetector)。読めなかったら ((パス, スレッド数), None)
             detector_config = Path(self._param('detector_config')).expanduser()
             if not detector_config.is_absolute():
                 detector_config = share / 'config' / 'balloon' / detector_config
@@ -337,18 +339,19 @@ class AutoTargetGenerator(LifecycleNode):
         path = Path(self._param('cnn_model')).expanduser()
         if not path.is_absolute():
             path = self._models_dir / path
-        if self._cnn is None or self._cnn[0] != path:
+        threads = self._param('cnn_threads')
+        if self._cnn is None or self._cnn[0] != (path, threads):
             try:
-                model = CnnDetector(path, self._param('cnn_conf'))
+                model = CnnDetector(path, self._param('cnn_conf'), threads=threads)
                 self.get_logger().info(
-                    f'CNN を読んだ: {path}（{model.backend}、入力 {model.input_size}）'
+                    f'CNN を読んだ: {path}（{model.backend}、{threads} スレッド、入力 {model.input_size}）'
                 )
             except Exception as e:  # noqa: BLE001 読めなくても止まらない
                 model = None
                 self.get_logger().error(
                     f'CNN を読めない（色の検出で続ける）: {path}: {e}'
                 )
-            self._cnn = (path, model)
+            self._cnn = ((path, threads), model)
         return self._cnn[1]
 
     def _reload_detector(self) -> None:
@@ -385,7 +388,7 @@ class AutoTargetGenerator(LifecycleNode):
             'new_frame': dets is not None,
             # 今使っている検出のしかたとモデル名（CNN を読めず色の検出で続けているなら hsv）
             'detector': 'cnn' if self._using_cnn() else 'hsv',
-            'cnn_model': self._cnn[0].name if self._using_cnn() else None,
+            'cnn_model': self._cnn[0][0].name if self._using_cnn() else None,
             # 今使っている色の設定（current.json を読めず同梱の設定で動いているなら fallback）
             'config': {
                 'file': self._watcher.loaded_from.name,
