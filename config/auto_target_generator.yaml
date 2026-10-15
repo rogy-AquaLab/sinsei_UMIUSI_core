@@ -16,7 +16,7 @@
     detector: "hsv"
     # ファイル名だけなら config/balloon/models/ から探す。20261007 = 実機の autonomy で使ってきたもの、
     # 20261015 = ラベルを直して学び直したもの（JAMSTEC で良い、10/03・9/13 は同等以上。実機では未確認）
-    cnn_model: "balloon_cnn_20261007.onnx"
+    cnn_model: "balloon_cnn_20261015.onnx"  # 現場用（exp/field-1015 だけ）
     # 確信度の下限。0.4 にすると濁ったプール（10/03）でほぼ全部消える
     cnn_conf: 0.3
     # 推論のスレッド数。Pi で 2 が一番速い（4 だとカメラ・制御とコアを取り合う）
@@ -33,7 +33,7 @@
     preview: true
     max_frame_age: 0.5
     # control の方位保持（hold_yaw）は実機で未検証なので既定は使わない
-    use_hold_yaw: false
+    use_hold_yaw: true  # 現場用（exp/field-1015 だけ）。10/15 プールで突進がまっすぐになった（fb で効く）
     # 向きの対応。陸上で確かめ、逆なら -1.0（docs/auto_balloon.md）
     sign_surge: 1.0
     sign_heave: 1.0
@@ -56,6 +56,6 @@
       backoff_time: 2.0
       search_yaw_rate: 0.35
       aim_x: 0.0
-      aim_y: 0.0
+      aim_y: 0.3  # 現場用（exp/field-1015 だけ）。針は前カメラの画面の下端のすぐ外。10/15 プールで割れた値
       first_color: "yellow"
       priority: ["red", "yellow"]
