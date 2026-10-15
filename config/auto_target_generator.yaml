@@ -18,6 +18,8 @@
     cnn_model: "balloon_cnn_20261007.onnx"
     # 確信度の下限。0.4 にすると濁ったプール（10/03）でほぼ全部消える
     cnn_conf: 0.3
+    # 推論のスレッド数。Pi で 2 が一番速い（4 だとカメラ・制御とコアを取り合う）
+    cnn_threads: 2
     rate_hz: 10.0
     max_frame_age: 0.5
     # control の方位保持（hold_yaw）は実機で未検証なので既定は使わない

@@ -28,8 +28,13 @@ TOPK = 40
 
 class CnnDetector:
     def __init__(
-        self, path: Union[str, Path], conf: float = 0.3, backend: str = 'auto'
+        self,
+        path: Union[str, Path],
+        conf: float = 0.3,
+        backend: str = 'auto',
+        threads: int = 2,
     ) -> None:
+        """threads: 推論のスレッド数。Pi で 2 が一番速い（4 だとカメラ・制御とコアを取り合って遅くなる）。"""
         self.path = Path(path)
         self.conf = conf
         self._ort = None
@@ -39,9 +44,7 @@ class CnnDetector:
                 import onnxruntime as ort
 
                 opts = ort.SessionOptions()
-                opts.intra_op_num_threads = (
-                    2  # Pi の 4 コアを使い切らない（カメラ・制御が同居）
-                )
+                opts.intra_op_num_threads = threads
                 self._ort = ort.InferenceSession(
                     str(self.path), opts, providers=['CPUExecutionProvider']
                 )
@@ -49,6 +52,8 @@ class CnnDetector:
                 if backend == 'onnxruntime':
                     raise
         if self._ort is None:
+            # OpenCV のスレッド数はプロセス全体に効く（色の検出にも効くが、そちらは軽いので影響は小さい）
+            cv2.setNumThreads(threads)
             self._net = cv2.dnn.readNetFromONNX(str(self.path))
         self.backend = 'onnxruntime' if self._ort is not None else 'opencv'
         self.input_size = self._input_size()

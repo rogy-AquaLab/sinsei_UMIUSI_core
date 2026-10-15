@@ -131,8 +131,12 @@ ros2 param set /auto_target_generator cnn_model balloon_cnn_20261015.onnx
   10/03 0.56 → 0.62、9/13 自プール 0.61 → 0.62。実機では未確認）
 - `cnn_conf`（既定 0.3）より確信度の低い検出は捨てる。0.4 にすると濁ったプール（10/03）でほぼ全部消える
 - CNN を読めなければログに出して色の検出で続ける。`~/status` の `detector` が今使っている方、検出ごとの `s` が確信度
-- 推論は onnxruntime があればそれ（2 スレッド）、無ければ OpenCV の dnn。結果は同じ（OpenCV 4.6 で確認）。
-  x86（Ryzen 5 3500U）で 1 枚 12〜21 ms。Pi では未計測
+- 推論は onnxruntime があればそれ、無ければ OpenCV の dnn。結果は同じ（Pi の OpenCV 4.6 と onnxruntime 1.31 で 174 コマ一致）。
+  スレッド数は `cnn_threads`（既定 2）。Pi（umiusi2、カメラ・制御・UI を動かしたまま、1 コマ平均）:
+  onnxruntime 2 スレッド 76 ms / OpenCV 2 スレッド 89 ms / OpenCV 4 スレッド 106 ms（色の検出は 19 ms）。
+  UI をつないだままだと rosbridge と映像の配信が重く、CNN の周期が 3〜7 Hz に落ちる（切れば 9.5 Hz）
+- onnxruntime は Ubuntu 24.04 の apt に無い。Pi では `pip install --no-deps --break-system-packages --target ~/ws-claude/ortlib onnxruntime`
+  で入れ、`PYTHONPATH` に足す（システムの numpy 1.26 のまま動く）
 - `radius` は色の検出器に合わせて「本来の比率に戻した画像で、箱の長い辺の半分 / 画像幅」。
   `source_aspect` は `detector_config` の値を使う。近さのしきい値（`ram_radius` など）は色の検出器で決めたものなので、
   CNN の箱が風船より少し大きく / 小さく出ると突っ込む距離が変わる。プールで確かめる
