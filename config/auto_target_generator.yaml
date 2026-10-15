@@ -10,6 +10,14 @@
     # ファイル名だけなら config/balloon/ から探す（例: "normal.json"）。~ も使える
     detector_config: "~/umiusi_balloon/current.json"
     detector_reload_period: 1.0
+    # 検出のしかた。"hsv" = 上の色のしきい値、"cnn" = 学習した CNN（色合わせ不要）。
+    # 走行中でも ros2 param set /auto_target_generator detector cnn で切り替わる。CNN を読めなければ hsv で続ける
+    detector: "hsv"
+    # ファイル名だけなら config/balloon/models/ から探す。20261007 = 実機の autonomy で使ってきたもの、
+    # 20261015 = ラベルを直して学び直したもの（JAMSTEC で良い、10/03・9/13 は同等以上。実機では未確認）
+    cnn_model: "balloon_cnn_20261007.onnx"
+    # 確信度の下限。0.4 にすると濁ったプール（10/03）でほぼ全部消える
+    cnn_conf: 0.3
     rate_hz: 10.0
     # Auto でない間も認識だけ回して ~/status に出す（UI で認識を確かめる用。推力は出さない）
     preview: true
