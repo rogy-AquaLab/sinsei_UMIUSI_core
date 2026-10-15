@@ -99,6 +99,65 @@ class CameraReader:
             self._stop.wait(0.5)
 
 
+class DetectionWorker:
+    """別スレッドで、新しいコマが来るたびに detect_fn を回し、最新の結果だけを持つ。
+
+    検出（特に CNN）が 1 周期より遅くても、指令の周期（_tick）を止めないため。
+    実機（2026-10-15）で CNN を周期の中で回すと、指令の更新が 3〜6 Hz に落ちて接近中に左右へ振れた。
+    """
+
+    def __init__(self, name: str, get_frame, detect_fn, logger) -> None:
+        self._get_frame = get_frame  # () -> (seq, t_frame, frame) か None
+        self._detect_fn = detect_fn  # (frame) -> [Detection] か None（この回は休む）
+        self._logger = logger
+        self._lock = threading.Lock()
+        self._result = None  # (seq, t_frame, frame, dets, 検出にかかった秒)
+        self._taken = True
+        self._stop = threading.Event()
+        self._thread = threading.Thread(target=self._run, name=name, daemon=True)
+
+    def start(self) -> None:
+        self._thread.start()
+
+    def stop(self) -> None:
+        self._stop.set()
+        self._thread.join(timeout=2.0)
+
+    def latest(self):
+        with self._lock:
+            return self._result
+
+    def take(self):
+        """まだ渡していない新しい結果があれば返す（1 回だけ）。"""
+        with self._lock:
+            if self._taken or self._result is None:
+                return None
+            self._taken = True
+            return self._result
+
+    def _run(self) -> None:
+        last_seq = 0
+        while not self._stop.is_set():
+            got = self._get_frame()
+            if got is None or got[0] == last_seq or got[2] is None:
+                self._stop.wait(0.005)
+                continue
+            seq, t_frame, frame = got
+            last_seq = seq
+            t0 = time.monotonic()
+            try:
+                dets = self._detect_fn(frame)
+            except Exception as e:  # noqa: BLE001 検出が落ちても止めない（次のコマで続ける）
+                self._logger.error(f'検出で例外: {e!r}', throttle_duration_sec=5.0)
+                continue
+            if dets is None:
+                self._stop.wait(0.05)
+                continue
+            with self._lock:
+                self._result = (seq, t_frame, frame, dets, time.monotonic() - t0)
+                self._taken = False
+
+
 class AutoTargetGenerator(LifecycleNode):
     """
     # Auto Target Generator Node
@@ -120,8 +179,9 @@ class AutoTargetGenerator(LifecycleNode):
         self.declare_parameter('detector_config', '~/umiusi_balloon/current.json')
         # 色の設定ファイルの更新を見る周期 [s]。変わっていたら読み直す（色合わせの結果をそのまま反映する）。0 で見ない
         self.declare_parameter('detector_reload_period', 1.0)
-        # 'hsv' = 色のしきい値（detector_config の色）、'cnn' = 学習した CNN（cnn_model）。走行中に切り替えてよい。
-        # CNN を読めなければ hsv で続ける
+        # 'hsv' = 色のしきい値（detector_config の色）、'cnn' = 学習した CNN（cnn_model）、
+        # 'hsv+cnn' = 色のしきい値が主。色で何も見つからないときだけ、別スレッドで回している CNN の新しい結果を使う。
+        # 走行中に切り替えてよい。CNN を読めなければ hsv で続ける
         self.declare_parameter('detector', 'hsv')
         # ファイル名だけなら share/sinsei_umiusi_core/config/balloon/models/ から探す。絶対パスならそのまま
         self.declare_parameter('cnn_model', 'balloon_cnn_20261007.onnx')
@@ -129,6 +189,8 @@ class AutoTargetGenerator(LifecycleNode):
         self.declare_parameter('cnn_conf', 0.3)
         # 推論のスレッド数（onnxruntime / OpenCV）。Pi では 2 が一番速い
         self.declare_parameter('cnn_threads', 2)
+        # hsv+cnn で CNN の結果を使ってよい古さ [s]（CNN は遅いので、これより古い位置では狙わない）
+        self.declare_parameter('cnn_assist_max_age', 0.5)
         # 水面の鏡像とつながった縦長の検出（高さ / 幅 > reflection_aspect）を、下側の本物の風船に直す
         self.declare_parameter('reflection_split', True)
         self.declare_parameter('reflection_aspect', 1.3)
@@ -192,6 +254,13 @@ class AutoTargetGenerator(LifecycleNode):
             1.0 / self._param('rate_hz'), self._tick, autostart=False
         )
         self._camera = None
+        self._worker = None
+        self._assist = None
+        self._cnn_lock = (
+            threading.Lock()
+        )  # CNN は検出スレッドと補助スレッドの両方から使う
+        self._assist_used = False
+        self._det_ms = None
         self._active = False
         self._last_seq = 0
         self._preview_timer: Timer = self.create_timer(
@@ -232,8 +301,9 @@ class AutoTargetGenerator(LifecycleNode):
         else:
             t0 = now
         self._mission.reset(t0)
-        if self._param('detector') == 'cnn':
-            self._cnn_model()  # 最初のフレームで待たないよう先に読む
+        if self._param('detector') in ('cnn', 'hsv+cnn'):
+            with self._cnn_lock:
+                self._cnn_model()  # 最初のフレームで待たないよう先に読む
         self._open_save_dir()
         self._timer.reset()
         p = self._mission.p
@@ -269,15 +339,22 @@ class AutoTargetGenerator(LifecycleNode):
         return TransitionCallbackReturn.SUCCESS
 
     # ------------------------------------------------------------------ 本体
+    def _take_detection(self, now: float):
+        """検出スレッドの新しい結果 (frame, dets)。無い・古いなら (None, None)。"""
+        res = self._worker.take() if self._worker is not None else None
+        if res is None:
+            return None, None
+        seq, t_frame, frame, dets, took = res
+        self._det_ms = round(took * 1e3)
+        if now - t_frame > self._param('max_frame_age'):
+            return None, None
+        self._last_seq = seq
+        return frame, dets
+
     def _tick(self) -> None:
         now = time.monotonic()
         try:
-            seq, t_frame, frame = self._camera.latest()
-            dets = None
-            fresh = now - t_frame <= self._param('max_frame_age')
-            if seq != self._last_seq and frame is not None and fresh:
-                self._last_seq = seq
-                dets = self._detect(frame)
+            frame, dets = self._take_detection(now)
             cmd = self._mission.step(now, dets)
         except Exception as e:  # noqa: BLE001 何が起きても推力 0 を出して止まる
             self.get_logger().error(
@@ -294,8 +371,21 @@ class AutoTargetGenerator(LifecycleNode):
         if self._camera is None:
             self._camera = CameraReader(self._param('camera_source'), self.get_logger())
             self._camera.start()
+            camera = self._camera
+            self._worker = DetectionWorker(
+                'detect', camera.latest, self._detect, self.get_logger()
+            )
+            self._assist = DetectionWorker(
+                'cnn_assist', camera.latest, self._assist_detect, self.get_logger()
+            )
+            self._worker.start()
+            self._assist.start()
 
     def _stop_camera(self) -> None:
+        for w in (self._worker, self._assist):
+            if w is not None:
+                w.stop()
+        self._worker = self._assist = None
         if self._camera is not None:
             self._camera.stop()
             self._camera = None
@@ -308,38 +398,58 @@ class AutoTargetGenerator(LifecycleNode):
             self._stop_camera()
             return
         self._ensure_camera()
-        try:
-            seq, t_frame, frame = self._camera.latest()
-            if seq == self._last_seq or frame is None:
-                return
-            if time.monotonic() - t_frame > self._param('max_frame_age'):
-                return
-            self._last_seq = seq
-            dets = self._detect(frame)
-        except Exception as e:  # noqa: BLE001 表示用なので止めない
-            self.get_logger().error(f'preview で例外: {e!r}', throttle_duration_sec=5.0)
+        _frame, dets = self._take_detection(time.monotonic())
+        if dets is None:
             return
         self._publish_status(Command(state='PREVIEW'), dets)
 
     def _detect(self, frame):
+        """検出スレッドで回る。"""
         params = self._watcher.params
-        dets = None
-        if self._param('detector') == 'cnn':
-            model = self._cnn_model()
-            if model is not None:
-                model.conf = self._param('cnn_conf')
-                dets = detect_cnn(frame, model, params)
+        mode = self._param('detector')
+        dets = self._run_cnn(frame) if mode == 'cnn' else None
+        used_assist = False
         if dets is None:
             dets, _ = detect(frame, params)
-        if self._param('reflection_split'):
-            dets = split_reflection(
-                dets, params, frame.shape, self._param('reflection_aspect')
-            )
+            dets = self._split(dets, frame)
+            if mode == 'hsv+cnn' and not dets:
+                assist = self._assist.latest() if self._assist is not None else None
+                if (
+                    assist is not None
+                    and time.monotonic() - assist[1]
+                    <= self._param('cnn_assist_max_age')
+                    and assist[3]
+                ):
+                    dets, used_assist = assist[3], True
+        self._assist_used = used_assist
         return dets
+
+    def _assist_detect(self, frame):
+        """補助スレッドで回る。hsv+cnn のときだけ CNN を掛ける（それ以外は休む = None）。"""
+        if self._param('detector') != 'hsv+cnn':
+            return None
+        return self._run_cnn(frame)
+
+    def _run_cnn(self, frame):
+        """CNN の検出（鏡像の補正つき）。CNN を読めなければ None。"""
+        with self._cnn_lock:
+            model = self._cnn_model()
+            if model is None:
+                return None
+            model.conf = self._param('cnn_conf')
+            dets = detect_cnn(frame, model, self._watcher.params)
+        return self._split(dets, frame)
+
+    def _split(self, dets, frame):
+        if not self._param('reflection_split'):
+            return dets
+        return split_reflection(
+            dets, self._watcher.params, frame.shape, self._param('reflection_aspect')
+        )
 
     def _using_cnn(self) -> bool:
         return (
-            self._param('detector') == 'cnn'
+            self._param('detector') in ('cnn', 'hsv+cnn')
             and self._cnn is not None
             and self._cnn[1] is not None
         )
@@ -397,7 +507,11 @@ class AutoTargetGenerator(LifecycleNode):
             },
             'new_frame': dets is not None,
             # 今使っている検出のしかたとモデル名（CNN を読めず色の検出で続けているなら hsv）
-            'detector': 'cnn' if self._using_cnn() else 'hsv',
+            'detector': (self._param('detector') if self._using_cnn() else 'hsv'),
+            # hsv+cnn で、このコマは色で見つからず CNN の結果を使った
+            'assist_used': self._assist_used,
+            # 直近の検出 1 回にかかった時間 [ms]（検出スレッド）
+            'det_ms': self._det_ms,
             'cnn_model': self._cnn[0][0].name if self._using_cnn() else None,
             # 今使っている色の設定（current.json を読めず同梱の設定で動いているなら fallback）
             'config': {

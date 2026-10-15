@@ -10,7 +10,8 @@
     # ファイル名だけなら config/balloon/ から探す（例: "normal.json"）。~ も使える
     detector_config: "~/umiusi_balloon/current.json"
     detector_reload_period: 1.0
-    # 検出のしかた。"hsv" = 上の色のしきい値、"cnn" = 学習した CNN（色合わせ不要）。
+    # 検出のしかた。"hsv" = 上の色のしきい値、"cnn" = 学習した CNN（色合わせ不要）、
+    # "hsv+cnn" = 色が主で、色で何も見つからないときだけ別スレッドの CNN の新しい結果（cnn_assist_max_age 秒以内）を使う。
     # 走行中でも ros2 param set /auto_target_generator detector cnn で切り替わる。CNN を読めなければ hsv で続ける
     detector: "hsv"
     # ファイル名だけなら config/balloon/models/ から探す。20261007 = 実機の autonomy で使ってきたもの、
@@ -20,6 +21,7 @@
     cnn_conf: 0.3
     # 推論のスレッド数。Pi で 2 が一番速い（4 だとカメラ・制御とコアを取り合う）
     cnn_threads: 2
+    cnn_assist_max_age: 0.5
     # 水面の鏡像とつながった縦長の検出（高さ / 幅 > reflection_aspect）を、下側の本物の風船に直す
     reflection_split: true
     reflection_aspect: 1.3
