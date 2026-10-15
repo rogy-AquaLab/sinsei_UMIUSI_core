@@ -127,8 +127,8 @@ ros2 param set /auto_target_generator cnn_model balloon_cnn_20261015.onnx
 ```
 
 - モデルは `config/balloon/models/`。`balloon_cnn_20261007.onnx` = 実機の autonomy で使ってきたもの（既定）、
-  `balloon_cnn_20261015.onnx` = ラベルを直して学び直したもの（JAMSTEC の映像で F1 0.32 → 0.58、反射の誤検出 78 → 26、
-  10/03 は 0.56 で同じ。実機では未確認）
+  `balloon_cnn_20261015.onnx` = ラベルを直して学び直したもの（F1: JAMSTEC の映像 0.30 → 0.62、反射の誤検出 85 → 35、
+  10/03 0.56 → 0.62、9/13 自プール 0.61 → 0.62。実機では未確認）
 - `cnn_conf`（既定 0.3）より確信度の低い検出は捨てる。0.4 にすると濁ったプール（10/03）でほぼ全部消える
 - CNN を読めなければログに出して色の検出で続ける。`~/status` の `detector` が今使っている方、検出ごとの `s` が確信度
 - 推論は onnxruntime があればそれ（2 スレッド）、無ければ OpenCV の dnn。結果は同じ（OpenCV 4.6 で確認）。

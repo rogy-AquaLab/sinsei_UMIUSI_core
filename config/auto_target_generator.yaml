@@ -14,7 +14,7 @@
     # 走行中でも ros2 param set /auto_target_generator detector cnn で切り替わる。CNN を読めなければ hsv で続ける
     detector: "hsv"
     # ファイル名だけなら config/balloon/models/ から探す。20261007 = 実機の autonomy で使ってきたもの、
-    # 20261015 = ラベルを直して学び直したもの（JAMSTEC で良い、10/03 は同等。実機では未確認）
+    # 20261015 = ラベルを直して学び直したもの（JAMSTEC で良い、10/03・9/13 は同等以上。実機では未確認）
     cnn_model: "balloon_cnn_20261007.onnx"
     # 確信度の下限。0.4 にすると濁ったプール（10/03）でほぼ全部消える
     cnn_conf: 0.3
