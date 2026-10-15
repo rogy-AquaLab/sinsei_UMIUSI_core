@@ -23,26 +23,32 @@ core: auto_target_generator
 - 共有メモリを読む `shmsrc` は GStreamer の plugins-bad に入っている（control の `shmsink` と同じ）。
   入っていないと `no element "shmsrc"` と出て映像が来ない（`sudo apt install gstreamer1.0-plugins-bad`）
 - autonomy（`umiusi_autonomy`）の launch は**起動しない**。navigator などが `/cmd/target` を出して取り合いになる
-- Auto の間は rosbridge のクライアントが 0 になっても電源を落とさない（LAN を抜いて走るため）。
-  止めるには、持ち時間切れを待つ（推力 0、正浮力で浮く）か、LAN をつなぎ直して Standby に戻す
+- Auto の間は rosbridge のクライアントが 0 になっても電源を落とさない（水中では無線が届かず、競技中は通信もできないため）。
+  止めるには、持ち時間切れを待つ（推力 0、正浮力で浮く）か、つなぎ直して Standby に戻す
 
 ## 行動の流れ
 
 | 状態 | やること | 次へ |
 |---|---|---|
-| WAIT | Auto に入ってから `start_delay` 秒、推力 0（LAN を抜いて手を離す） | 時間 |
+| WAIT | Auto に入れて（= スタートの合図）から `start_delay` 秒、推力 0（水に入れて手を離す） | 時間 |
 | DIVE | 真下へ潜る（`dive_heave`） | 狙う色が見えた / `dive_time` |
 | APPROACH | 目標を照準（`aim_x`, `aim_y`）に合わせながら近づく。青が目標より大きく正面にあれば止まって避ける | 大きく・照準内 / 見失った |
 | RAM | `ram_time` 秒まっすぐ突っ込む | 時間 |
 | BACKOFF | `backoff_time` 秒下がる | 時間 |
 | SEARCH | その場で回って探す | 狙う色が見えた |
-| END | `mission_time` 秒経ったら推力 0 | — |
+| END | 動き出してから `mission_time` 秒経ったら推力 0（正浮力で浮く） | — |
 
 最初は `first_color`（黄）だけを狙い、一度突っ込むか `first_only_time` 秒経ったら `priority`（赤 → 黄）を狙う。
 青は狙わない。割れたかどうかは判定しない（まだ見えていればもう一度狙う。同じ色に `max_rams` 回続いたら
 `ignore_time` 秒無視する）。
 
 パラメータは `config/auto_target_generator.yaml`。数値は型を合わせる（`15` ではなく `15.0`）。
+`mission.*` は Auto に入るたびに読み直すので、持ち時間などは起動したまま変えられる（次の Auto から効く）:
+
+```bash
+ros2 param set /auto_target_generator mission.mission_time 300.0
+ros2 param set /auto_target_generator mission.start_delay 10.0
+```
 
 ## プールに入る前に（陸上）
 
@@ -76,7 +82,7 @@ python3 -m pytest test/python
 1. LAN をつないだまま Auto に入れ、`ros2 topic echo /auto_target_generator/status` で状態と検出を見る
 2. 毎回 bag を取る（`/auto_target_generator/status`, `/cmd/*`, `/state/imu`）。
    `save_dir` に生フレームと検出結果が残るので、色合わせに使う
-3. 本番の手順: Auto に入れる → `start_delay` 秒以内に LAN を抜いて機体を放す
+3. 本番の手順: 無線でつないだまま Auto に入れる（スタートの合図）→ `start_delay` 秒以内に水に入れて手を離す
 
 ## 色のしきい値（色合わせ）
 

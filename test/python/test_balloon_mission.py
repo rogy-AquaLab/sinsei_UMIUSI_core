@@ -184,3 +184,12 @@ def test_params_from_dict_rejects_typos():
     assert params_from_dict({'ram_time': 2.0, 'priority': ['red']}).priority == ('red',)
     with pytest.raises(ValueError, match='ram_tme'):
         params_from_dict({'ram_tme': 2.0})
+
+
+def test_mission_time_counts_from_start_not_from_auto():
+    p = MissionParams(start_delay=10.0, mission_time=60.0)
+    m = BalloonMission(p)
+    m.reset(0.0)
+    m.step(10.0, [])  # WAIT -> DIVE
+    assert m.step(69.9, []).state != END
+    assert m.step(70.0, []).state == END
