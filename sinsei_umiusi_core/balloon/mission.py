@@ -67,11 +67,17 @@ class MissionParams:
 
     # --- 照準（APPROACH）
     k_yaw: float = 0.8  # 横ずれ 1（画面端）あたりの yaw_rate [rad/s]
+    # 目標が CNN の検出のときの k_yaw。CNN は遅れ（周期 + 推論で 0.4〜0.5 s）が大きく、0.8 だと左右に振れ続けた
+    # （2026-10-15 の CNN の走行で反転 22 回/分・突進 0。sim で実機の画角・旋回に合わせると 0.4 で振れが消えた）
+    k_yaw_cnn: float = 0.4
     k_heave: float = 0.6  # 縦ずれ 1 あたりの heave
     aim_x: float = 0.0  # ピンが当たる位置（画像座標）。カメラとピンの取り付けで決まる
     aim_y: float = 0.0
     near_radius: float = 0.08  # これより大きく見えたら減速（半径 / 画像幅）
     ram_radius: float = 0.16  # これより大きく、照準のずれが ram_tol 以内なら突っ込む
+    # 目標が CNN の検出のときの ram_radius。0 なら ram_radius と同じ。
+    # CNN の箱は実寸の約 0.86 倍（HSV は約 1.23 倍）に出て、10/15 は 0.16 に一度も届かなかった（未検証。0.12 前後が候補）
+    ram_radius_cnn: float = 0.0
     ram_tol: float = 0.15
 
     # --- 目標の選び方
@@ -109,6 +115,13 @@ class _Track:
     y: float
     radius: float
     seen_at: float
+    cnn: bool = False  # CNN の検出か
+
+
+def _track(d: Detection, now: float) -> _Track:
+    return _Track(
+        d.color, d.x, d.y, d.radius, now, getattr(d, 'source', 'hsv') == 'cnn'
+    )
 
 
 class BalloonMission:
@@ -189,12 +202,16 @@ class BalloonMission:
             return self._search(now, None)
 
         ex, ey = tr.x - p.aim_x, tr.y - p.aim_y
-        if tr.radius >= p.ram_radius and abs(ex) <= p.ram_tol and abs(ey) <= p.ram_tol:
+        k_yaw = p.k_yaw_cnn if tr.cnn else p.k_yaw
+        ram_radius = (
+            p.ram_radius_cnn if tr.cnn and p.ram_radius_cnn > 0 else p.ram_radius
+        )
+        if tr.radius >= ram_radius and abs(ex) <= p.ram_tol and abs(ey) <= p.ram_tol:
             self._go(RAM, now)
             return self._ram(now, None)
 
         # 画面右（ex > 0）なら右へ回る = 負の yaw_rate。画面下（ey > 0）なら潜る = 負の heave
-        yaw_rate = -p.k_yaw * ex
+        yaw_rate = -k_yaw * ex
         heave = _clip(-p.k_heave * ey, 1.0)
         surge = (
             p.approach_surge_near
@@ -269,14 +286,14 @@ class BalloonMission:
                     same,
                     key=lambda d: (d.x - self.track.x) ** 2 + (d.y - self.track.y) ** 2,
                 )
-                self.track = _Track(d.color, d.x, d.y, d.radius, now)
+                self.track = _track(d, now)
                 return
             return  # 今回は見えていない。lost_time までは前の位置を使う
         for color in wanted:
             cands = [d for d in dets if d.color == color]
             if cands:
                 d = max(cands, key=lambda d: d.radius)  # 一番近い（大きい）もの
-                self.track = _Track(d.color, d.x, d.y, d.radius, now)
+                self.track = _track(d, now)
                 return
 
     def _blocking_avoid(

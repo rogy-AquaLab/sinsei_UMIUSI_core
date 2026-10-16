@@ -25,7 +25,7 @@ from sinsei_umiusi_core.balloon.async_detect import (
     confirm_assist,
     fresh_assist,
 )
-from sinsei_umiusi_core.balloon.cnn import CnnDetector, detect_cnn
+from sinsei_umiusi_core.balloon.cnn import CnnDetector, detect_cnn, merge_overlaps
 from sinsei_umiusi_core.balloon.config_watch import ConfigWatcher
 from sinsei_umiusi_core.balloon.reflection import split_reflection
 from sinsei_umiusi_core.balloon.mission import (
@@ -144,6 +144,8 @@ class AutoTargetGenerator(LifecycleNode):
         self.declare_parameter('cnn_assist_confirm', True)
         # 水面の鏡像とつながった縦長の検出（高さ / 幅 > reflection_aspect）を、下側の本物の風船に直す
         self.declare_parameter('reflection_split', True)
+        # CNN が 1 個の風船に重ねて出す小さい箱を、大きい方の 1 個にまとめる（目標の大きさが半分に化けるのを防ぐ）
+        self.declare_parameter('cnn_merge', True)
         self.declare_parameter('reflection_aspect', 1.3)
         self.declare_parameter('rate_hz', 10.0)
         # これより古いフレームは使わない [s]
@@ -400,6 +402,8 @@ class AutoTargetGenerator(LifecycleNode):
                 return None
             model.conf = self._param('cnn_conf')
             dets = detect_cnn(frame, model, self._watcher.params)
+        if self._param('cnn_merge'):
+            dets = merge_overlaps(dets)
         return self._split(dets, frame)
 
     def _split(self, dets, frame):
@@ -461,6 +465,10 @@ class AutoTargetGenerator(LifecycleNode):
         status = {
             'state': cmd.state,
             'target': cmd.target,
+            # 追っている目標が CNN の検出か（k_yaw_cnn・ram_radius_cnn が効いている）
+            'target_cnn': (
+                self._mission.track.cnn if self._mission.track is not None else None
+            ),
             'cmd': {
                 'surge': cmd.surge,
                 'heave': cmd.heave,
@@ -488,6 +496,7 @@ class AutoTargetGenerator(LifecycleNode):
                     'y': round(d.y, 3),
                     'r': round(d.radius, 4),
                     's': round(d.score, 3),
+                    'src': d.source,
                 }
                 for d in dets or []
             ],
