@@ -126,3 +126,40 @@ python3 -m pytest test/python
 - 撮影スクリプトとノードは同じ共有メモリを同時に読む（GStreamer の shmsink は複数の読み手を受け付ける。実機で要確認）
 - 提案の計算は `sinsei_umiusi_core/balloon/calibrate.py`（色相は外れ値を除いて余白を足す。赤は 0/179 をまたぐので 2 つ。
   S と V は下限だけで、背景のクリックが 5% 以下しか入らなくなるまで上げる）
+
+## CNN で検出する（色合わせ不要）
+
+色のしきい値の代わりに、学習した CNN（umiusi_sim の TinyBalloonNet、ONNX）でも検出できる。色合わせは要らない。
+`detector` で切り替え、走行中でも切り替わる（行動決定はどちらでも同じ）:
+
+```bash
+ros2 param set /auto_target_generator detector cnn   # 戻すときは hsv
+ros2 param set /auto_target_generator cnn_model balloon_cnn_20261015.onnx
+```
+
+- モデルは `config/balloon/models/`。`balloon_cnn_20261007.onnx` = 実機の autonomy で使ってきたもの（既定）、
+  `balloon_cnn_20261015.onnx` = ラベルを直して学び直したもの（F1: JAMSTEC の映像 0.30 → 0.62、反射の誤検出 85 → 35、
+  10/03 0.56 → 0.62、9/13 自プール 0.61 → 0.62。実機では未確認）
+- `cnn_conf`（既定 0.3）より確信度の低い検出は捨てる。0.4 にすると濁ったプール（10/03）でほぼ全部消える
+- CNN を読めなければログに出して色の検出で続ける。`~/status` の `detector` が今使っている方、検出ごとの `s` が確信度
+- 推論は onnxruntime があればそれ、無ければ OpenCV の dnn。結果は同じ（Pi の OpenCV 4.6 と onnxruntime 1.31 で 174 コマ一致）。
+  スレッド数は `cnn_threads`（既定 2）。Pi（umiusi2、カメラ・制御・UI を動かしたまま、1 コマ平均）:
+  onnxruntime 2 スレッド 76 ms / OpenCV 2 スレッド 89 ms / OpenCV 4 スレッド 106 ms（色の検出は 19 ms）。
+  UI をつないだままだと rosbridge と映像の配信が重く、CNN の周期が 3〜7 Hz に落ちる（切れば 9.5 Hz）
+- onnxruntime は Ubuntu 24.04 の apt に無い。Pi では `pip install --no-deps --break-system-packages --target ~/ws-claude/ortlib onnxruntime`
+  で入れ、`PYTHONPATH` に足す（システムの numpy 1.26 のまま動く）
+- 入力の大きさは onnxruntime ならモデルから読む。OpenCV の dnn で読むときは 320 決め打ちなので、320 以外のモデル（軽量化した 224 など）は onnxruntime で使う
+- `radius` は色の検出器に合わせて「本来の比率に戻した画像で、箱の長い辺の半分 / 画像幅」。
+  `source_aspect` は `detector_config` の値を使う。近さのしきい値（`ram_radius` など）は色の検出器で決めたものなので、
+  CNN の箱が風船より少し大きく / 小さく出ると突っ込む距離が変わる。プールで確かめる
+- 復号は `sinsei_umiusi_core/balloon/cnn.py`。学習側（umiusi_sim `learned_detector.decode`）と 44 枚で検出が一致する
+
+### 検出を別スレッドで回す / 色が主で CNN が補助（hsv+cnn）
+- 検出は別スレッド（`sinsei_umiusi_core/balloon/async_detect.py` の `DetectionWorker`）で回し、指令は検出の遅さに関係なく `rate_hz` で出す。
+  CNN を周期の中で回していたときは、指令の更新が 3〜6 Hz に落ちて接近中に左右へ振れた（2026-10-15 プール）。
+  `~/status` の `det_ms` が検出 1 回にかかった時間
+- `detector: hsv+cnn`: 色の検出が主。色で何も見つからないコマだけ、補助のスレッドの CNN の結果を使う（`~/status` の `assist_used`）。
+  - `cnn_assist_max_age`（0.5 s）より古いコマの結果は使わない
+  - `cnn_assist_conf`（0.5）より確信度の低い検出は使わない（`cnn_conf` とは別。CNN は反射・タイルに高い確信度を出すため）
+  - `cnn_assist_confirm`（true）なら、前回の CNN でも近く（画面の幅・高さの 0.15 以内）に同じ色があったものだけ使う
+- 10/15 のプールでは、hsv+cnn は検出 9.2 Hz・突進 3 回で、ほぼ hsv と同じ動きで割れた（CNN 単独は検出 4.4 Hz・突進 0）
