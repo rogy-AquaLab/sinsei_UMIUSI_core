@@ -20,7 +20,7 @@ from sinsei_umiusi_core.balloon.mission import (
 )
 
 
-def det(color, x=0.0, y=0.0, radius=0.05):
+def det(color, x=0.0, y=0.0, radius=0.05, source='hsv'):
     return Detection(
         color=color,
         x=x,
@@ -30,6 +30,7 @@ def det(color, x=0.0, y=0.0, radius=0.05):
         fill=1.0,
         solidity=1.0,
         bbox=(0, 0, 0, 0),
+        source=source,
     )
 
 
@@ -205,3 +206,26 @@ def test_resumed_mission_keeps_the_original_time_limit():
     assert m.step(30.0, []).state == DIVE  # 待ちは済んでいるのですぐ動く
     assert m.step(69.9, []).state != END
     assert m.step(70.0, []).state == END
+
+
+def test_cnn_target_uses_its_own_k_yaw():
+    p = MissionParams(k_yaw=0.8, k_yaw_cnn=0.4, max_yaw_rate=10.0)
+    m = started(p)
+    hsv = m.step(1.0, [det('yellow', x=0.4)])
+    assert hsv.yaw_rate == pytest.approx(-0.8 * 0.4)
+    cnn = m.step(1.1, [det('yellow', x=0.4, source='cnn')])
+    assert cnn.yaw_rate == pytest.approx(-0.4 * 0.4)  # CNN の目標は弱く回す
+
+
+def test_cnn_ram_radius_is_ram_radius_unless_set():
+    m = started(MissionParams(ram_radius=0.16))
+    m.step(1.0, [det('yellow', source='cnn')])
+    assert m.step(1.1, [det('yellow', radius=0.13, source='cnn')]).state == APPROACH
+    m = started(MissionParams(ram_radius=0.16, ram_radius_cnn=0.12))
+    m.step(1.0, [det('yellow', source='cnn')])
+    assert m.step(1.1, [det('yellow', radius=0.13, source='cnn')]).state == RAM
+    m = started(MissionParams(ram_radius=0.16, ram_radius_cnn=0.12))
+    m.step(1.0, [det('yellow')])
+    assert (
+        m.step(1.1, [det('yellow', radius=0.13)]).state == APPROACH
+    )  # HSV は 0.16 のまま
