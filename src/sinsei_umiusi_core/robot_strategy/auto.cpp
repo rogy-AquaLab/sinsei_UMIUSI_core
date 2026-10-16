@@ -158,19 +158,25 @@ auto sinsei_umiusi_core::robot_strategy::Auto::recover() -> void
           const auto state = future.get()->current_state.id;
           using lifecycle_msgs::msg::State;
           using lifecycle_msgs::msg::Transition;
-          auto activate = [this](bool ok) {
-              if (!ok || !this->recovering) {
+          // 途中で次の立て直しが始まったら、古い方は手を引く（activate を二重に送らない）
+          auto stale = [this, requested_at]() {
+              return !this->recovering || this->recover_requested_at != requested_at;
+          };
+          auto activate = [this, stale](bool ok) {
+              if (!ok || stale()) {
                   return;
               }
-              this->set_run_started_at([this]() {
-                  if (!this->recovering) {
+              this->set_run_started_at([this, stale]() {
+                  if (stale()) {
                       return;
                   }
-                  this->change_state_async(Transition::TRANSITION_ACTIVATE, [this](bool ok) {
+                  this->change_state_async(Transition::TRANSITION_ACTIVATE, [this, stale](bool ok) {
                       RCLCPP_INFO(
                         this->ros_node->get_logger(), "Activate auto target generator: %s",
                         ok ? "ok" : "failed");
-                      this->recovering = !ok;
+                      if (!stale()) {
+                          this->recovering = !ok;
+                      }
                   });
               });
           };
