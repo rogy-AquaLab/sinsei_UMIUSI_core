@@ -20,6 +20,7 @@ Pi を作り直すときは「Pi の設定」を上から順に。
 | `calib.sh capture/serve` | 色合わせ。`serve` で `http://<機体>:8766/`。保存すると auto_target_generator が 1 秒以内に読み直す |
 | `meas.sh` | 15 秒の CPU（プロセスごと）と status の周期 |
 | `bag_stats.py <bag>` | bag の status から、検出の周期・接近中に見えたコマ・見失い・旋回の反転を集計 |
+| `det_probe.py` | 前カメラで HSV と CNN（モデルを複数並べられる）を回し、1 秒ごとに色ごとの見えた数・一番大きい半径 r・確信度、最後に検出 1 回の時間を出す。`--save <dir>` で枠を描いた jpg。会場でどこまで遠くが見えるか・モデルの Pi での時間を測る用（走行中でも使える）。onnxruntime を使うので `source scripts/field/env.sh` してから |
 | `watch_run.py <out.tsv>` | 1 秒ごとに robot_state・クライアント数・自律の状態・指令を記録（rosbridge を使わない。無線の試験用） |
 | `rosbridge_keepalive.py` | 何も購読しない接続を 1 本張る。UI を閉じて計測するとき、Standby で電源が落ちないように |
 
