@@ -58,3 +58,18 @@ def test_skips_when_teacher_sees_nothing():
     img = np.full((240, 320, 3), WATER, np.uint8)
     result = autocal(DetectorParams(), [img] * 3, lambda bgr: [])
     assert all('skipped' in result.report[c] for c in ('red', 'yellow', 'blue'))
+
+
+def test_keeps_the_old_range_when_f1_is_below_min_f1():
+    scenes = [scene(s) for s in range(12)]
+    teacher = dict((id(img), boxes) for img, boxes in scenes)
+    base = DetectorParams()
+    base.colors = {'yellow': [HsvRange((0, 0, 0), (179, 255, 255))]}
+    result = autocal(
+        base,
+        [img for img, _ in scenes],
+        lambda bgr: teacher[id(bgr)],
+        min_f1=1.01,  # どんなに合っても届かない
+    )
+    assert 'f1' in result.report['yellow'] and 'skipped' in result.report['yellow']
+    assert result.params.colors['yellow'] == base.colors['yellow']
