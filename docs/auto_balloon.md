@@ -25,6 +25,11 @@ core: auto_target_generator
 - autonomy（`umiusi_autonomy`）の launch は**起動しない**。navigator などが `/cmd/target` を出して取り合いになる
 - Auto の間は rosbridge のクライアントが 0 になっても電源を落とさない（水中では無線が届かず、競技中は通信もできないため）。
   止めるには、持ち時間切れを待つ（推力 0、正浮力で浮く）か、つなぎ直して Standby に戻す
+- `auto_target_generator` が落ちても Auto は続く。launch が立ち上げ直し（respawn）、robot_strategy の Auto は
+  指令が 1 s 来なければ推力 0 を出しつつ configure → activate し直す。持ち時間は `run_started_at`（Auto に入った時刻）を
+  渡して数え続ける（立ち上げ直しで持ち時間が延びない）
+- `preview: true`（既定）で、Auto でない間も認識だけ回して `~/status` に出す（UI で認識と色合わせを確かめる用。推力は出さない）。
+  その分 Standby / Manual でもカメラの読み込みと検出の CPU を使う。Pi が重いときは `preview: false`
 
 ## 行動の流れ
 
