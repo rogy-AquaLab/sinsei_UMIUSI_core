@@ -148,6 +148,7 @@ ros2 param set /auto_target_generator cnn_model balloon_cnn_20261015.onnx
   UI をつないだままだと rosbridge と映像の配信が重く、CNN の周期が 3〜7 Hz に落ちる（切れば 9.5 Hz）
 - onnxruntime は Ubuntu 24.04 の apt に無い。Pi では `pip install --no-deps --break-system-packages --target ~/ws-claude/ortlib onnxruntime`
   で入れ、`PYTHONPATH` に足す（システムの numpy 1.26 のまま動く）
+- 入力の大きさは onnxruntime ならモデルから読む。OpenCV の dnn で読むときは 320 決め打ちなので、320 以外のモデル（軽量化した 224 など）は onnxruntime で使う
 - `radius` は色の検出器に合わせて「本来の比率に戻した画像で、箱の長い辺の半分 / 画像幅」。
   `source_aspect` は `detector_config` の値を使う。近さのしきい値（`ram_radius` など）は色の検出器で決めたものなので、
   CNN の箱が風船より少し大きく / 小さく出ると突っ込む距離が変わる。プールで確かめる
