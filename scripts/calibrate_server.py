@@ -5,7 +5,7 @@
   python3 scripts/calibrate_server.py ~/umiusi_balloon/capture/20261011-101500
 
 ブラウザで http://<機体のホスト名>:8766 を開く（例: http://umiusi2.local:8766）。
-保存すると <out-dir>/<名前>.json と <out-dir>/current.json ができる。auto_target_generator の
+保存すると <out-dir>/<名前>.json と <out-dir>/current.json ができる（上書き前の current.json は <out-dir>/history/ に残す）。auto_target_generator の
 detector_config を current.json にしておけば、保存するたびに自動で読み直す（ノードを止めなくてよい）。
 
 撮影は scripts/capture_frames.py。走行中は止めておく（CPU を使うので）。
@@ -283,7 +283,14 @@ class State:
         self.out_dir.mkdir(parents=True, exist_ok=True)
         named = self.out_dir / f'{name}.json'
         write_atomic(named, text)
-        write_atomic(self.out_dir / 'current.json', text)  # ノードはこれを見て読み直す
+        current = self.out_dir / 'current.json'
+        if current.exists():
+            # 上書きする前の版を残す（採る前と後を比べられるように）
+            hist = self.out_dir / 'history'
+            hist.mkdir(exist_ok=True)
+            stamp = datetime.now().strftime('%Y%m%d-%H%M%S')
+            write_atomic(hist / f'current-{stamp}.json', current.read_text())
+        write_atomic(current, text)  # ノードはこれを見て読み直す
         return named
 
 
