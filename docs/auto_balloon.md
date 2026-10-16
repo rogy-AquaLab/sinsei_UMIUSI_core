@@ -163,3 +163,13 @@ ros2 param set /auto_target_generator cnn_model balloon_cnn_20261015.onnx
   - `cnn_assist_conf`（0.5）より確信度の低い検出は使わない（`cnn_conf` とは別。CNN は反射・タイルに高い確信度を出すため）
   - `cnn_assist_confirm`（true）なら、前回の CNN でも近く（画面の幅・高さの 0.15 以内）に同じ色があったものだけ使う
 - 10/15 のプールでは、hsv+cnn は検出 9.2 Hz・突進 3 回で、ほぼ hsv と同じ動きで割れた（CNN 単独は検出 4.4 Hz・突進 0）
+
+### CNN の目標のときだけ照準を変える / 重なった箱をまとめる
+- 追っている目標が CNN の検出（`detector: cnn`、または hsv+cnn で CNN の結果を使ったコマ）のときだけ、
+  `mission.k_yaw_cnn`（既定 0.4、色は `k_yaw` 0.8）と `mission.ram_radius_cnn`（既定 0 = `ram_radius` と同じ）を使う。`~/status` の `target_cnn`
+  - CNN は遅れ（周期 + 推論 0.4〜0.5 s）が大きく、10/15 の CNN の走行は `k_yaw` 0.8 で左右に振れ続けた（反転 22 回/分）。
+    水中の画角は横の半分が約 0.4 rad と狭く、x 1 あたりの旋回が強く効く。sim を実機の旋回と画角に合わせると 0.4 で振れが消えた
+  - CNN の箱は実寸の約 0.86 倍（色は約 1.23 倍）に出て、10/15 は半径が `ram_radius` 0.16 に一度も届かず突進 0 回。
+    下げるなら 0.12 前後が候補（未検証）
+- `cnn_merge`（既定 true）: CNN が 1 個の風船の上に重ねて出す同じ色の小さい箱（中心が大きい方の箱の半分以内）を、大きい方の 1 個にまとめる。
+  小さい方を追うと目標の大きさ（= 距離）が半分に化ける。検出ごとの `src`（hsv / cnn）も `~/status` に出す

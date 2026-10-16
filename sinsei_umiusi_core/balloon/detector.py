@@ -40,6 +40,8 @@ class Detection:
     bbox: Tuple[int, int, int, int]
     # 確信度（CNN の検出だけ。色の検出は 1）
     score: float = 1.0
+    # どの検出器が出したか（'hsv' / 'cnn'）。mission が CNN の目標のときだけ照準の強さを変えるのに使う
+    source: str = 'hsv'
 
 
 def gray_world(bgr: np.ndarray, max_gain: float) -> np.ndarray:

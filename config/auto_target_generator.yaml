@@ -26,6 +26,8 @@
     cnn_assist_conf: 0.5
     cnn_assist_confirm: true
     # 水面の鏡像とつながった縦長の検出（高さ / 幅 > reflection_aspect）を、下側の本物の風船に直す
+    # CNN が 1 個の風船に重ねて出す小さい箱を、大きい方の 1 個にまとめる
+    cnn_merge: true
     reflection_split: true
     reflection_aspect: 1.3
     rate_hz: 10.0

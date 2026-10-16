@@ -11,8 +11,9 @@
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
-from typing import List, Union
+from typing import List, Sequence, Union
 
 import cv2
 import numpy as np
@@ -148,7 +149,29 @@ def detect_cnn(
                     round(fh * h),
                 ),
                 score=s,
+                source='cnn',
             )
         )
     dets.sort(key=lambda d: d.area, reverse=True)
     return dets
+
+
+def merge_overlaps(dets: Sequence[Detection]) -> List[Detection]:
+    """同じ色で、中心が大きい方の箱の半分（長い辺の半分）より近い箱は、大きい方の 1 個にまとめる。
+
+    CNN は 1 個の風船の上に、同じ色の小さい箱を 1〜1.5 個重ねて出す（2026-10-15 の AUTO のコマ）。
+    mission が「前回に一番近い箱」としてこれを拾うと、目標の大きさ（= 距離）が半分に化け、突進が遅れる。
+    """
+    out: List[Detection] = []
+    for d in sorted(dets, key=lambda d: d.bbox[2] * d.bbox[3], reverse=True):
+        cx, cy = d.bbox[0] + d.bbox[2] / 2, d.bbox[1] + d.bbox[3] / 2
+        if not any(
+            k.color == d.color
+            and math.hypot(
+                cx - k.bbox[0] - k.bbox[2] / 2, cy - k.bbox[1] - k.bbox[3] / 2
+            )
+            < max(k.bbox[2], k.bbox[3]) / 2
+            for k in out
+        ):
+            out.append(d)
+    return out
