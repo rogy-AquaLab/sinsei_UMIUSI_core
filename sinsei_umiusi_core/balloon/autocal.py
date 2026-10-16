@@ -63,9 +63,14 @@ def autocal(
     max_bg_in: float = 0.15,
     min_keep: float = 0.85,
     refine: bool = True,
+    min_f1: float = 0.5,
     seed: int = 0,
 ) -> AutoCalResult:
-    """frames: BGR 画像。teacher は確信度 0.15 くらいまで低く出すこと（背景の除外と誤りの判定に使う）。"""
+    """frames: BGR 画像。teacher は確信度 0.15 くらいまで低く出すこと（背景の除外と誤りの判定に使う）。
+
+    min_f1: 合わせた範囲の f1（先生の箱との一致）がこれ未満の色は採らず、元の値のままにする。
+    10/15 のデータでは、見せていない青を CNN の誤検出から合わせ、緑を青にした（f1 0.10 で採用されていた）。
+    """
     rng = np.random.default_rng(seed)
     cand = collections.defaultdict(list)  # 色 -> [(確信度, 画素, フレーム番号, 箱)]
     bg, cache = [], []
@@ -148,6 +153,9 @@ def autocal(
         if refine:
             ranges, f1 = _refine_sv(out, c, ranges, cache, pos[c])
             report[c]['f1'] = round(f1, 3)
+            if f1 < min_f1:
+                report[c]['skipped'] = f'f1 が {f1:.2f} < {min_f1}（元の値のまま）'
+                continue
         out.colors[c] = ranges
         report[c].update(
             keep=round(pr.keep, 3),
