@@ -22,8 +22,10 @@
     save_dir: "/home/pi/runs/auto"
     save_every: 0.5
     mission:
-      start_delay: 15.0
-      mission_time: 240.0
+      # AUTO に入れた（= スタートの合図）あと start_delay 秒で動き出し、mission_time 秒で推力 0。
+      # AUTO に入るたびに読み直すので、ros2 param set で変えれば次から効く
+      start_delay: 10.0
+      mission_time: 300.0
       dive_time: 12.0
       dive_heave: -0.4
       approach_surge_far: 0.35

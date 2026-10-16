@@ -10,7 +10,7 @@
 検出の座標は画像中心が (0, 0)、右・下が正、端が ±1。
 
 状態:
-  WAIT      Auto に入ってから手を離すまでの待ち。推力 0
+  WAIT      Auto に入って（= スタートの合図）から動き出すまでの待ち。推力 0
   DIVE      真下へ潜る。スタート地点の水面からは、正面の黄色は画面の下に外れて見えない
   APPROACH  目標を画面中央（ピンの照準）に保ちながら近づく
   RAM       真っすぐ突っ込む
@@ -44,9 +44,9 @@ WAIT, DIVE, APPROACH, RAM, BACKOFF, SEARCH, END = (
 class MissionParams:
     # --- 時間 [s]
     start_delay: float = (
-        15.0  # Auto に入ってから動き出すまで（LAN を抜いて手を離す時間）
+        10.0  # Auto に入ってから動き出すまで（機体を水に入れて手を離す時間）
     )
-    mission_time: float = 240.0  # 動き出してからの持ち時間。過ぎたら END
+    mission_time: float = 300.0  # 動き出してからの持ち時間。過ぎたら END
     dive_time: float = 12.0  # 黄色が見えなくても DIVE を打ち切る時間
     ram_time: float = 3.0
     backoff_time: float = 2.0

@@ -159,12 +159,7 @@ class AutoTargetGenerator(LifecycleNode):
             )
             if self._watcher.startup_error:
                 self.get_logger().error(self._watcher.startup_error)
-            mission_params = params_from_dict(
-                {
-                    f.name: self._param(f'mission.{f.name}')
-                    for f in fields(MissionParams)
-                }
-            )
+            mission_params = self._mission_params()
         except Exception as e:  # noqa: BLE001 設定ミスは configure の失敗として見せる
             self.get_logger().error(f'設定を読めない: {e}')
             return TransitionCallbackReturn.FAILURE
@@ -190,11 +185,29 @@ class AutoTargetGenerator(LifecycleNode):
         self._camera = CameraReader(self._param('camera_source'), self.get_logger())
         self._camera.start()
         self._last_seq = 0
+        # AUTO に入るたびに読み直す（ros2 param set で持ち時間などを変えたら、次の AUTO から効く）
+        try:
+            self._mission = BalloonMission(
+                self._mission_params(), use_hold_yaw=self._param('use_hold_yaw')
+            )
+        except Exception as e:  # noqa: BLE001 読めなければ前の値で走る
+            self.get_logger().error(
+                f'mission のパラメータを読めない。前の値で走る: {e}'
+            )
         self._mission.reset(time.monotonic())
         self._open_save_dir()
         self._timer.reset()
-        self.get_logger().info('activate: 風船割りを開始（WAIT から）')
+        p = self._mission.p
+        self.get_logger().info(
+            f'activate: 風船割りを開始（WAIT から）。{p.start_delay:g} 秒後に動き出し、'
+            f'{p.mission_time:g} 秒で推力 0'
+        )
         return TransitionCallbackReturn.SUCCESS
+
+    def _mission_params(self) -> MissionParams:
+        return params_from_dict(
+            {f.name: self._param(f'mission.{f.name}') for f in fields(MissionParams)}
+        )
 
     def on_deactivate(self, state: LifecycleState) -> TransitionCallbackReturn:
         self._timer.cancel()
