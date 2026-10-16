@@ -152,3 +152,13 @@ ros2 param set /auto_target_generator cnn_model balloon_cnn_20261015.onnx
   `source_aspect` は `detector_config` の値を使う。近さのしきい値（`ram_radius` など）は色の検出器で決めたものなので、
   CNN の箱が風船より少し大きく / 小さく出ると突っ込む距離が変わる。プールで確かめる
 - 復号は `sinsei_umiusi_core/balloon/cnn.py`。学習側（umiusi_sim `learned_detector.decode`）と 44 枚で検出が一致する
+
+### 検出を別スレッドで回す / 色が主で CNN が補助（hsv+cnn）
+- 検出は別スレッド（`sinsei_umiusi_core/balloon/async_detect.py` の `DetectionWorker`）で回し、指令は検出の遅さに関係なく `rate_hz` で出す。
+  CNN を周期の中で回していたときは、指令の更新が 3〜6 Hz に落ちて接近中に左右へ振れた（2026-10-15 プール）。
+  `~/status` の `det_ms` が検出 1 回にかかった時間
+- `detector: hsv+cnn`: 色の検出が主。色で何も見つからないコマだけ、補助のスレッドの CNN の結果を使う（`~/status` の `assist_used`）。
+  - `cnn_assist_max_age`（0.5 s）より古いコマの結果は使わない
+  - `cnn_assist_conf`（0.5）より確信度の低い検出は使わない（`cnn_conf` とは別。CNN は反射・タイルに高い確信度を出すため）
+  - `cnn_assist_confirm`（true）なら、前回の CNN でも近く（画面の幅・高さの 0.15 以内）に同じ色があったものだけ使う
+- 10/15 のプールでは、hsv+cnn は検出 9.2 Hz・突進 3 回で、ほぼ hsv と同じ動きで割れた（CNN 単独は検出 4.4 Hz・突進 0）

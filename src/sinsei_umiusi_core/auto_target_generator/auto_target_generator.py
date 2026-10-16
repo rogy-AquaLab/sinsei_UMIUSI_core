@@ -20,6 +20,11 @@ from rclpy.timer import Timer
 from std_msgs.msg import String
 
 from sinsei_umiusi_core.balloon import detect
+from sinsei_umiusi_core.balloon.async_detect import (
+    DetectionWorker,
+    confirm_assist,
+    fresh_assist,
+)
 from sinsei_umiusi_core.balloon.cnn import CnnDetector, detect_cnn
 from sinsei_umiusi_core.balloon.config_watch import ConfigWatcher
 from sinsei_umiusi_core.balloon.reflection import split_reflection
@@ -97,65 +102,6 @@ class CameraReader:
                     self._stop.wait(period)
             cap.release()
             self._stop.wait(0.5)
-
-
-class DetectionWorker:
-    """別スレッドで、新しいコマが来るたびに detect_fn を回し、最新の結果だけを持つ。
-
-    検出（特に CNN）が 1 周期より遅くても、指令の周期（_tick）を止めないため。
-    実機（2026-10-15）で CNN を周期の中で回すと、指令の更新が 3〜6 Hz に落ちて接近中に左右へ振れた。
-    """
-
-    def __init__(self, name: str, get_frame, detect_fn, logger) -> None:
-        self._get_frame = get_frame  # () -> (seq, t_frame, frame) か None
-        self._detect_fn = detect_fn  # (frame) -> [Detection] か None（この回は休む）
-        self._logger = logger
-        self._lock = threading.Lock()
-        self._result = None  # (seq, t_frame, frame, dets, 検出にかかった秒)
-        self._taken = True
-        self._stop = threading.Event()
-        self._thread = threading.Thread(target=self._run, name=name, daemon=True)
-
-    def start(self) -> None:
-        self._thread.start()
-
-    def stop(self) -> None:
-        self._stop.set()
-        self._thread.join(timeout=2.0)
-
-    def latest(self):
-        with self._lock:
-            return self._result
-
-    def take(self):
-        """まだ渡していない新しい結果があれば返す（1 回だけ）。"""
-        with self._lock:
-            if self._taken or self._result is None:
-                return None
-            self._taken = True
-            return self._result
-
-    def _run(self) -> None:
-        last_seq = 0
-        while not self._stop.is_set():
-            got = self._get_frame()
-            if got is None or got[0] == last_seq or got[2] is None:
-                self._stop.wait(0.005)
-                continue
-            seq, t_frame, frame = got
-            last_seq = seq
-            t0 = time.monotonic()
-            try:
-                dets = self._detect_fn(frame)
-            except Exception as e:  # noqa: BLE001 検出が落ちても止めない（次のコマで続ける）
-                self._logger.error(f'検出で例外: {e!r}', throttle_duration_sec=5.0)
-                continue
-            if dets is None:
-                self._stop.wait(0.05)
-                continue
-            with self._lock:
-                self._result = (seq, t_frame, frame, dets, time.monotonic() - t0)
-                self._taken = False
 
 
 class AutoTargetGenerator(LifecycleNode):
@@ -419,14 +365,13 @@ class AutoTargetGenerator(LifecycleNode):
             dets, _ = detect(frame, params)
             dets = self._split(dets, frame)
             if mode == 'hsv+cnn' and not dets:
-                assist = self._assist.latest() if self._assist is not None else None
-                if (
-                    assist is not None
-                    and time.monotonic() - assist[1]
-                    <= self._param('cnn_assist_max_age')
-                    and assist[3]
-                ):
-                    dets, used_assist = assist[3], True
+                assist = fresh_assist(
+                    self._assist.latest() if self._assist is not None else None,
+                    time.monotonic(),
+                    self._param('cnn_assist_max_age'),
+                )
+                if assist:
+                    dets, used_assist = assist, True
         self._assist_used = used_assist
         return dets
 
@@ -445,14 +390,7 @@ class AutoTargetGenerator(LifecycleNode):
         prev, self._assist_prev = self._assist_prev, dets
         if not self._param('cnn_assist_confirm'):
             return dets
-        return [
-            d
-            for d in dets
-            if any(
-                p.color == d.color and abs(p.x - d.x) <= 0.15 and abs(p.y - d.y) <= 0.15
-                for p in prev
-            )
-        ]
+        return confirm_assist(dets, prev)
 
     def _run_cnn(self, frame):
         """CNN の検出（鏡像の補正つき）。CNN を読めなければ None。"""
