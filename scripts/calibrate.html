@@ -49,6 +49,10 @@
     <span class="hint" id="px"></span>
   </div>
 
+  <p id="autoArea">
+    <button id="auto">クリックせずに自動で合わせる（CNN、1〜2 分）</button>
+    <span class="hint">学習した CNN が見つけた風船から色を決めます。結果を見て、足りない色だけクリックで足せます。</span>
+  </p>
   <div id="clickArea">
     <div class="row">
       <span>クリックした数: <span class="count" id="count">0</span></span>
@@ -105,6 +109,7 @@ const STEPS = [
 ];
 const NAMES = { yellow: "黄色", red: "赤", blue: "青", background: "風船以外" };
 let st, i = 0, step = 0, counts = {}, view = "mask";
+let autoReport = null;  // 自動で合わせた直後の結果（クリックしたら手動の提案に戻る）
 const $ = (id) => document.getElementById(id);
 const msg = (t) => { $("msg").textContent = t; };
 
@@ -131,6 +136,7 @@ function renderSteps() {
   $("hint").textContent = s.hint;
   const isResult = s.key === "result";
   $("clickArea").hidden = isResult;
+  $("autoArea").hidden = isResult;
   $("resultArea").hidden = !isResult;
   $("back").disabled = step === 0;
   $("go").textContent = step === 3 ? "結果を見る →" : "次へ →";
@@ -164,7 +170,29 @@ function verdict(v, hitsN) {
   return { cls: "ok", text: `OK（${hitsN} 枚の画像で見つかりました）` };
 }
 
+function autoVerdict(v, hitsN) {
+  if (!v || v.skipped) return { cls: "warn", text: `自動では合わせられませんでした（${v ? v.skipped : "CNN が見つけていない"}）。クリックで足してください` };
+  if (v.f1 !== undefined && v.f1 < 0.5)
+    return { cls: "warn", text: `合わせましたが、CNN の見た風船との一致が低いです（${v.f1}）。クリックで足してください` };
+  return { cls: "ok", text: `自動で合わせました（CNN の見た風船との一致 ${v.f1}、${hitsN} 枚の画像で見つかりました）` };
+}
+
+async function showAutoResult() {
+  renderRanges(autoReport.ranges);
+  const hits = await api("/api/summary");
+  $("result").innerHTML = "";
+  for (const c of ["yellow", "red", "blue"]) {
+    const v = autoVerdict(autoReport.report[c], (hits[c] || []).length);
+    const li = document.createElement("li");
+    li.innerHTML = `<span class="dot" style="background:var(--${c})"></span><b>${NAMES[c]}</b>: <span class="${v.cls}"></span>`;
+    li.querySelector(`.${v.cls}`).textContent = v.text;
+    $("result").appendChild(li);
+  }
+  msg(`自動で合わせました。← → で画像を変えて確かめ、良ければ名前を付けて保存してください。`);
+}
+
 async function showResult() {
+  if (autoReport) return showAutoResult();
   msg("色の範囲を計算しています…");
   try {
     const r = await api("/api/propose", {});
@@ -226,6 +254,7 @@ $("img").onclick = async (e) => {
   const r = key === "background" ? 0.03 : 0.012;
   try {
     await api("/api/click", { label: key, i, x, y, r });
+    autoReport = null;
     counts[key] = clickCount(key) + 1;
     renderSteps(); render();
   } catch (err) { msg(err.message); }
@@ -249,6 +278,15 @@ $("undo").onclick = async () => {
   await api("/api/undo", { label: key });
   counts[key] = clickCount(key) - 1;
   renderSteps(); render();
+};
+$("auto").onclick = async () => {
+  $("auto").disabled = true;
+  msg("CNN で風船を探して、色の範囲を計算しています（1〜2 分）…");
+  try {
+    autoReport = await api("/api/auto_propose", {});
+    await goStep(STEPS.length - 1);
+  } catch (e) { msg("自動で合わせられませんでした: " + e.message); }
+  $("auto").disabled = false;
 };
 $("prev").onclick = () => { i = Math.max(0, i - 1); render(); };
 $("next").onclick = () => { i = Math.min(st.frames.length - 1, i + 1); render(); };

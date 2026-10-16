@@ -9,6 +9,8 @@
 detector_config を current.json にしておけば、保存するたびに自動で読み直す（ノードを止めなくてよい）。
 
 撮影は scripts/capture_frames.py。走行中は止めておく（CPU を使うので）。
+「自動で合わせる」は、学習した CNN（--cnn-model）の検出を先生にしてクリックなしで範囲を出す
+（sinsei_umiusi_core/balloon/autocal.py）。Pi で 1〜2 分かかる。結果は人が見て確かめてから保存する。
 元: sinsei_umiusi_ballon_detector tools/calibrate_server.py（PC 版）。
 """
 
@@ -36,7 +38,9 @@ from sinsei_umiusi_core.balloon import (  # noqa: E402
     load_params,
     preprocess,
 )
+from sinsei_umiusi_core.balloon.autocal import autocal  # noqa: E402
 from sinsei_umiusi_core.balloon.calibrate import propose  # noqa: E402
+from sinsei_umiusi_core.balloon.cnn import CnnDetector  # noqa: E402
 
 COLORS = ('yellow', 'red', 'blue')
 LABELS = COLORS + ('background',)
@@ -49,6 +53,8 @@ DRAW = {
 IMAGE_EXTS = {'.jpg', '.jpeg', '.png', '.bmp'}
 PAINT_GRAY = (128, 128, 128)
 DEFAULT_OUT = Path.home() / 'umiusi_balloon'
+DEFAULT_CNN = REPO / 'config' / 'balloon' / 'models' / 'balloon_cnn_20261007.onnx'
+AUTO_MAX_FRAMES = 40  # 自動で合わせるときに使うコマ数の上限（Pi での時間を抑える）
 
 
 def newest_capture(out_dir: Path) -> Path:
@@ -205,6 +211,21 @@ class State:
         self.last_proposal = result
         return result
 
+    def auto_propose(self, cnn_model: Path):
+        """CNN の検出を先生にして範囲を出す。合わせられなかった色は元のまま。"""
+        teacher = CnnDetector(
+            cnn_model, conf=0.15
+        )  # 低めに出す（背景の除外と誤りの判定に使う）
+        n = len(self.frames)
+        idx = np.linspace(0, n - 1, min(n, AUTO_MAX_FRAMES)).round().astype(int)
+        frames = [self.frames[k][1] for k in sorted(set(idx.tolist()))]
+        result = autocal(self.params, frames, teacher.boxes)
+        for c in COLORS:
+            if 'skipped' not in result.report.get(c, {'skipped': ''}):
+                self.params.colors[c] = result.params.colors[c]
+        self.last_proposal = {'auto': result.report, 'cnn_model': cnn_model.name}
+        return result.report
+
     def set_ranges(self, colors):
         for c, ranges in colors.items():
             self.params.colors[c] = [
@@ -293,6 +314,12 @@ def main() -> None:
         '--host', default='0.0.0.0', help='待ち受けるアドレス（既定: 全部）'
     )
     ap.add_argument('--port', type=int, default=8766)
+    ap.add_argument(
+        '--cnn-model',
+        type=Path,
+        default=DEFAULT_CNN,
+        help='「自動で合わせる」で先生にする CNN（ONNX）',
+    )
     args = ap.parse_args()
 
     base = args.base
@@ -372,6 +399,13 @@ def main() -> None:
                 elif self.path == '/api/propose':
                     self._json(
                         {'result': state.propose_all(), 'ranges': state.ranges_json()}
+                    )
+                elif self.path == '/api/auto_propose':
+                    self._json(
+                        {
+                            'report': state.auto_propose(args.cnn_model),
+                            'ranges': state.ranges_json(),
+                        }
                     )
                 elif self.path == '/api/ranges':
                     state.set_ranges(body['ranges'])
