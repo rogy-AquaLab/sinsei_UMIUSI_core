@@ -161,7 +161,11 @@ class BalloonMission:
     # ------------------------------------------------------------------ 状態
     def _wait(self, now, _dets) -> Command:
         if now - self.t_enter >= self.p.start_delay:
-            self.t_go = now
+            # 動き出した時刻は予定の時刻にする（立ち上がり直して途中から再開したとき、持ち時間を延ばさない）
+            self.t_go = self.t_enter + self.p.start_delay
+            if now - self.t_go >= self.p.mission_time:
+                self._go(END, now)
+                return self._end(now, None)
             self._go(DIVE, now)
             return self._dive(now, None)
         return Command()

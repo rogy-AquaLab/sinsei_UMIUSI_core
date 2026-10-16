@@ -9,6 +9,9 @@ launch:
       - node:
           pkg: "sinsei_umiusi_core"
           exec: "auto_target_generator"
+          # 落ちたら立ち上げ直す。configure / activate は robot_strategy の Auto がやり直す
+          respawn: "true"
+          respawn_delay: 1.0
           param:
             - from: "$(find-pkg-share sinsei_umiusi_core)/config/auto_target_generator.yaml"
       - node:

@@ -11,6 +11,8 @@
     detector_config: "~/umiusi_balloon/current.json"
     detector_reload_period: 1.0
     rate_hz: 10.0
+    # Auto でない間も認識だけ回して ~/status に出す（UI で認識を確かめる用。推力は出さない）
+    preview: true
     max_frame_age: 0.5
     # control の方位保持（hold_yaw）は実機で未検証なので既定は使わない
     use_hold_yaw: false
