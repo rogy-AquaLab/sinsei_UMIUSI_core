@@ -1,0 +1,70 @@
+{
+  "_comment": "通常カメラ用。2019 年 JAMSTEC 本番コースの公式動画で決めた値。水の青緑かぶりが強いので gray world でホワイトバランスを取ってから HSV で切る。",
+  "work_width": 320,
+  "source_aspect": 1.7778,
+  "white_balance": "grayworld",
+  "wb_max_gain": 4.0,
+  "blur_ksize": 5,
+  "morph_kernel": 5,
+  "min_area_frac": 0.0005,
+  "max_area_frac": 0.6,
+  "min_fill": 0.45,
+  "border_min_fill": 0.3,
+  "min_solidity": 0.8,
+  "colors": {
+    "yellow": [
+      {
+        "lo": [
+          12,
+          90,
+          120
+        ],
+        "hi": [
+          32,
+          255,
+          255
+        ]
+      }
+    ],
+    "red": [
+      {
+        "lo": [
+          0,
+          85,
+          100
+        ],
+        "hi": [
+          8,
+          255,
+          255
+        ]
+      },
+      {
+        "lo": [
+          168,
+          85,
+          100
+        ],
+        "hi": [
+          179,
+          255,
+          255
+        ]
+      }
+    ],
+    "blue": [
+      {
+        "lo": [
+          95,
+          165,
+          80
+        ],
+        "hi": [
+          110,
+          255,
+          255
+        ]
+      }
+    ]
+  }
+}

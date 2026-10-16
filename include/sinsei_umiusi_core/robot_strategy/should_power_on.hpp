@@ -6,6 +6,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include "sinsei_umiusi_msgs/msg/health_check_result.hpp"
+#include "sinsei_umiusi_msgs/msg/robot_state.hpp"
 #include "sinsei_umiusi_msgs/srv/power_off.hpp"
 #include "sinsei_umiusi_msgs/srv/power_on.hpp"
 #include "std_msgs/msg/int32.hpp"
@@ -24,10 +25,12 @@ class ShouldPowerOn : public BT::ConditionNode
     rclcpp::Subscription<sinsei_umiusi_msgs::msg::HealthCheckResult>::SharedPtr
       high_power_health_check_sub;
     rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr client_count_sub;
+    rclcpp::Subscription<sinsei_umiusi_msgs::msg::RobotState>::SharedPtr robot_state_sub;
 
     bool low_power_circuit_is_ok;
     bool high_power_circuit_is_ok;
     int32_t clients_num;
+    int8_t robot_state;
     bool should_power_on;
 
   public:

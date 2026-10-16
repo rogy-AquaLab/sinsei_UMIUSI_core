@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>風船の色合わせ</title>
+<style>
+  :root { --bg:#111; --fg:#eee; --muted:#9a9a9a; --line:#333; --accent:#4aa3ff;
+          --yellow:#ffd400; --red:#ff3b30; --blue:#2f80ff; --background:#bbb; --ok:#3ecf6e; --warn:#ffb020; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.6 system-ui, sans-serif; }
+  .wrap { max-width:960px; margin:0 auto; padding:12px 16px 48px; }
+  .steps { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
+  .steps span { padding:4px 12px; border-radius:999px; background:#222; color:var(--muted); font-size:14px; cursor:pointer; }
+  .steps span.now { background:var(--accent); color:#000; font-weight:700; }
+  .steps span.done { color:var(--fg); }
+  h1 { font-size:22px; margin:6px 0 2px; }
+  .hint { color:var(--muted); margin:0 0 10px; }
+  img { width:100%; height:auto; display:block; background:#000; border-radius:6px; cursor:crosshair; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:10px 0; }
+  button { background:#2a2a2a; color:var(--fg); border:1px solid #444; border-radius:8px; padding:8px 16px; font-size:16px; cursor:pointer; }
+  button.primary { background:var(--accent); color:#000; border-color:var(--accent); font-weight:700; }
+  button:disabled { opacity:.4; cursor:default; }
+  .count { font-weight:700; }
+  .result { margin:10px 0; padding:0; list-style:none; }
+  .result li { margin:6px 0; padding:8px 12px; border-radius:8px; background:#1b1b1b; }
+  .ok { color:var(--ok); font-weight:700; } .warn { color:var(--warn); font-weight:700; }
+  .dot { display:inline-block; width:12px; height:12px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+  #msg { min-height:1.6em; color:#ffd27a; margin:8px 0; }
+  details { margin-top:24px; color:var(--muted); }
+  summary { cursor:pointer; }
+  table { border-collapse:collapse; margin:8px 0; font-size:14px; }
+  td, th { padding:2px 6px; text-align:center; }
+  td input { width:52px; background:#222; color:var(--fg); border:1px solid #444; border-radius:4px; text-align:right; }
+  input[type=text] { background:#222; color:var(--fg); border:1px solid #444; border-radius:6px; padding:6px 10px; font-size:16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="steps" id="steps"></div>
+  <h1 id="title"></h1>
+  <p class="hint" id="hint"></p>
+
+  <img id="img" alt="">
+  <div class="row">
+    <button id="prev">← 前の画像</button>
+    <button id="next">次の画像 →</button>
+    <span class="hint" id="pos"></span>
+    <span class="hint" id="px"></span>
+  </div>
+
+  <div id="clickArea">
+    <div class="row">
+      <span>クリックした数: <span class="count" id="count">0</span></span>
+      <button id="undo">1 つ取り消す</button>
+      <span class="hint">（5 か所以上がおすすめ）</span>
+    </div>
+    <div class="row">
+      <button id="back">← 戻る</button>
+      <button id="go" class="primary">次へ →</button>
+    </div>
+  </div>
+
+  <div id="resultArea" hidden>
+    <ul class="result" id="result"></ul>
+    <div class="row">
+      <button id="viewToggle">元の画像を見る</button>
+    </div>
+    <div class="row">
+      <input id="saveName" type="text" placeholder="名前（例: pool1011）">
+      <button id="save" class="primary">保存して機体に反映</button>
+    </div>
+    <div class="row">
+      <button id="redo">最初の手順に戻って足す</button>
+    </div>
+  </div>
+  <div id="msg"></div>
+
+  <details>
+    <summary>詳しい設定（ふだんは触らなくてよい）</summary>
+    <p>
+      <button id="wb">水の色を打ち消す補正: ?</button>
+      <button id="reload">撮り直した画像を読み込む</button>
+    </p>
+    <p>色の範囲（H は 0〜179、S と V は 0〜255。数字を直接直してもよい）</p>
+    <table>
+      <thead><tr><th></th><th>H 下</th><th>S 下</th><th>V 下</th><th>H 上</th><th>S 上</th><th>V 上</th></tr></thead>
+      <tbody id="ranges"></tbody>
+    </table>
+    <p id="base"></p>
+  </details>
+</div>
+<script>
+const STEPS = [
+  { key: "yellow", tab: "1 黄", title: "1. 黄色い風船をクリック",
+    hint: "黄色い風船の内側をクリックします。近くの風船、遠くの風船、影になっている所など、いろいろな画像で 5 か所以上。" },
+  { key: "red", tab: "2 赤", title: "2. 赤い風船をクリック",
+    hint: "赤い風船の内側をクリックします。いろいろな画像で 5 か所以上。" },
+  { key: "blue", tab: "3 青", title: "3. 青い風船をクリック",
+    hint: "青い風船の内側をクリックします。青は水と見分けにくいので、近くの風船と、暗く写っている側も選んでください。" },
+  { key: "background", tab: "4 風船以外", title: "4. 風船以外をクリック",
+    hint: "水・壁・床・プールの底・錘など、風船ではない所をクリックします。風船と見間違えそうな所を特に選んでください。" },
+  { key: "result", tab: "5 結果", title: "5. 結果を見る",
+    hint: "見つかった所を色で塗っています。← → で画像を変えて、風船が塗られているか、風船以外が塗られていないかを見てください。" },
+];
+const NAMES = { yellow: "黄色", red: "赤", blue: "青", background: "風船以外" };
+let st, i = 0, step = 0, counts = {}, view = "mask";
+const $ = (id) => document.getElementById(id);
+const msg = (t) => { $("msg").textContent = t; };
+
+async function api(path, body) {
+  const r = await fetch(path, body === undefined ? {} : { method: "POST", body: JSON.stringify(body) });
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+}
+
+const clickCount = (key) => counts[key] || 0;
+
+function renderSteps() {
+  $("steps").innerHTML = "";
+  STEPS.forEach((s, k) => {
+    const el = document.createElement("span");
+    el.textContent = s.tab;
+    el.className = k === step ? "now" : k < step ? "done" : "";
+    el.onclick = () => goStep(k);
+    $("steps").appendChild(el);
+  });
+  const s = STEPS[step];
+  $("title").textContent = s.title;
+  $("hint").textContent = s.hint;
+  const isResult = s.key === "result";
+  $("clickArea").hidden = isResult;
+  $("resultArea").hidden = !isResult;
+  $("back").disabled = step === 0;
+  $("go").textContent = step === 3 ? "結果を見る →" : "次へ →";
+  if (!isResult) $("count").textContent = clickCount(s.key);
+}
+
+function render() {
+  const isResult = STEPS[step].key === "result";
+  const v = isResult && view === "mask" ? "mask" : "image";
+  // クリックする手順では、今の設定で見つかった枠は描かない（何をクリックするか迷わないように）
+  $("img").src = `/api/render?i=${i}&view=${v}&boxes=${isResult ? 1 : 0}&t=${Date.now()}`;
+  $("pos").textContent = `${i + 1} / ${st.frames.length} 枚目`;
+}
+
+async function goStep(k) {
+  step = k;
+  msg("");
+  renderSteps();
+  if (STEPS[step].key === "result") await showResult();
+  render();
+}
+
+function verdict(v, hitsN) {
+  if (!v || v.skipped) return { cls: "warn", text: "クリックが足りないので、前の設定のままです" };
+  if (v.mask_hit !== null && v.mask_hit < 0.5)
+    return { cls: "warn", text: "クリックした風船の多くが見つかっていません。近くの大きな風船を何か所か足してください" };
+  if (v.bg_in !== null && v.bg_in > 0.05)
+    return { cls: "warn", text: "風船以外の所も見つけてしまっています。「4 風船以外」で、塗られてしまった所をクリックしてください" };
+  if (v.bg_in === null)
+    return { cls: "warn", text: "見つかってはいますが、「4 風船以外」をクリックしていないので、風船以外も拾うかもしれません" };
+  return { cls: "ok", text: `OK（${hitsN} 枚の画像で見つかりました）` };
+}
+
+async function showResult() {
+  msg("色の範囲を計算しています…");
+  try {
+    const r = await api("/api/propose", {});
+    renderRanges(r.ranges);
+    const hits = await api("/api/summary");
+    $("result").innerHTML = "";
+    for (const c of ["yellow", "red", "blue"]) {
+      const v = verdict(r.result[c], (hits[c] || []).length);
+      const li = document.createElement("li");
+      li.innerHTML = `<span class="dot" style="background:var(--${c})"></span><b>${NAMES[c]}</b>: <span class="${v.cls}"></span>`;
+      li.querySelector(`.${v.cls}`).textContent = v.text;
+      $("result").appendChild(li);
+    }
+    msg(`全 ${st.frames.length} 枚の画像で調べました。良ければ名前を付けて保存してください。`);
+  } catch (e) { msg("計算できませんでした: " + e.message); }
+}
+
+function renderRanges(ranges) {
+  const tb = $("ranges"); tb.innerHTML = "";
+  for (const c of ["yellow", "red", "blue"]) {
+    (ranges[c] || []).forEach((r, k) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td style="color:var(--${c})">${NAMES[c]}${ranges[c].length > 1 ? k + 1 : ""}</td>` +
+        [...r.lo, ...r.hi].map((v, j) => `<td><input data-c="${c}" data-k="${k}" data-j="${j}" value="${v}"></td>`).join("");
+      tb.appendChild(tr);
+    });
+  }
+  for (const inp of tb.querySelectorAll("input")) inp.onchange = applyEdits;
+  st.ranges = ranges;
+}
+async function applyEdits() {
+  const ranges = JSON.parse(JSON.stringify(st.ranges));
+  for (const inp of $("ranges").querySelectorAll("input")) {
+    const r = ranges[inp.dataset.c][+inp.dataset.k];
+    const j = +inp.dataset.j;
+    (j < 3 ? r.lo : r.hi)[j % 3] = Math.round(+inp.value);
+  }
+  try { renderRanges((await api("/api/ranges", { ranges })).ranges); render(); msg("数字を反映しました（まだ保存していません）"); }
+  catch (e) { msg("反映できませんでした: " + e.message); }
+}
+
+function renderWb() {
+  $("wb").textContent = `水の色を打ち消す補正: ${st.params.white_balance === "grayworld" ? "あり" : "なし"}（押すと切り替え）`;
+}
+function renderBase() {
+  $("base").textContent = `画像: ${st.source} ／ 元にした設定: ${st.base} ／ 保存先: ${st.out_dir}`;
+}
+
+async function load() {
+  st = await api("/api/state");
+  renderSteps(); render(); renderWb(); renderRanges(st.ranges); renderBase();
+}
+
+$("img").onclick = async (e) => {
+  const key = STEPS[step].key;
+  if (key === "result") return;
+  const rect = e.target.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / rect.width, y = (e.clientY - rect.top) / rect.height;
+  const r = key === "background" ? 0.03 : 0.012;
+  try {
+    await api("/api/click", { label: key, i, x, y, r });
+    counts[key] = clickCount(key) + 1;
+    renderSteps(); render();
+  } catch (err) { msg(err.message); }
+};
+let pxTimer = null;
+$("img").onmousemove = (e) => {
+  const rect = e.target.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / rect.width, y = (e.clientY - rect.top) / rect.height;
+  clearTimeout(pxTimer);
+  pxTimer = setTimeout(async () => {
+    try {
+      const p = await api(`/api/pixel?i=${i}&x=${x}&y=${y}`);
+      const as = p.inside.length ? p.inside.map((c) => NAMES[c]).join("・") + "として見える" : "どの色でもない";
+      $("px").textContent = `カーソルの所: ${as}`;
+    } catch (err) { /* 無視 */ }
+  }, 60);
+};
+$("undo").onclick = async () => {
+  const key = STEPS[step].key;
+  if (!clickCount(key)) return;
+  await api("/api/undo", { label: key });
+  counts[key] = clickCount(key) - 1;
+  renderSteps(); render();
+};
+$("prev").onclick = () => { i = Math.max(0, i - 1); render(); };
+$("next").onclick = () => { i = Math.min(st.frames.length - 1, i + 1); render(); };
+$("back").onclick = () => goStep(Math.max(0, step - 1));
+$("go").onclick = () => goStep(Math.min(STEPS.length - 1, step + 1));
+$("redo").onclick = () => goStep(0);
+$("viewToggle").onclick = () => {
+  view = view === "mask" ? "image" : "mask";
+  $("viewToggle").textContent = view === "mask" ? "元の画像を見る" : "見つかった所を塗って見る";
+  render();
+};
+$("save").onclick = async () => {
+  try {
+    const name = $("saveName").value || `calib${new Date().toISOString().slice(5, 16).replace(/[-T:]/g, "")}`;
+    const r = await api("/api/save", { name });
+    msg(`保存しました（${r.path}）。機体は 1 秒ほどでこの設定に切り替わります。UI の枠で確かめてください。`);
+  } catch (e) { msg("保存できませんでした: " + e.message); }
+};
+$("wb").onclick = async () => {
+  try {
+    const mode = st.params.white_balance === "grayworld" ? "none" : "grayworld";
+    await api("/api/white_balance", { mode });
+    st.params.white_balance = mode; renderWb();
+    if (STEPS[step].key === "result") await showResult();
+    render();
+    msg(`補正を「${mode === "grayworld" ? "あり" : "なし"}」にしました。`);
+  } catch (e) { msg(e.message); }
+};
+$("reload").onclick = async () => {
+  try {
+    const r = await api("/api/reload", {});
+    st = await api("/api/state"); i = 0; counts = {};
+    renderBase(); goStep(0);
+    msg(`撮り直した画像を読み込みました（${r.frames} 枚）。クリックは最初からやり直しです。`);
+  } catch (e) { msg("読み込めませんでした: " + e.message); }
+};
+document.addEventListener("keydown", (e) => {
+  if (e.target.tagName === "INPUT") return;
+  if (e.key === "ArrowRight") $("next").click();
+  else if (e.key === "ArrowLeft") $("prev").click();
+  else return;
+  e.preventDefault();
+});
+load();
+</script>
+</body>
+</html>
