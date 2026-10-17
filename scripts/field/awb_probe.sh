@@ -10,7 +10,7 @@ FOCUS="af-mode=manual lens-position=${LENS:-1.0}"
 if [ $# -gt 0 ]; then CANDS=("$@"); else CANDS=(auto daylight cloudy indoor 2.0,1.5 3.0,1.2 4.0,1.0); fi
 for c in "${CANDS[@]}"; do
   case "$c" in
-    *,*) OPT="colour-gains=<$c>" ;;
+    *,*) OPT="awb-enable=false colour-gains=<$c>" ;;
     *) OPT="awb-mode=$c" ;;
   esac
   echo "== $c ($OPT)"
