@@ -1,13 +1,13 @@
 #!/bin/bash
 # 前カメラのホワイトバランスを候補ごとに数秒ずつ撮り、色の数字と 1 枚の並べ画像を出す。control を止めてから（カメラを取り合う）。
-#   awb_probe.sh                    既定の候補（auto、モード 3 つ、手のゲイン 3 つ）
+#   awb_probe.sh                    既定の候補（auto、手のゲイン 4 つ（2.7,1.45 が control の既定）、cloudy）
 #   awb_probe.sh 2.5,1.2 3.5,1.0    手のゲイン（赤,青）だけ試す
 # 選んだら: AWB=<モード> control.sh か GAINS=<赤,青> control.sh
 # 目安: 赤の平均が 0 近くなら赤い風船は黒くなる（10/17 の自動は赤 0.5・青 248 のコマが大半）。白い船体が白く見えるもの
 OUT=/tmp/awb_probe/$(date +%H%M%S)
 mkdir -p "$OUT"
 FOCUS="af-mode=manual lens-position=${LENS:-1.0}"
-if [ $# -gt 0 ]; then CANDS=("$@"); else CANDS=(auto daylight cloudy indoor 2.0,1.5 3.0,1.2 4.0,1.0); fi
+if [ $# -gt 0 ]; then CANDS=("$@"); else CANDS=(auto 2.7,1.45 2.3,1.6 3.0,1.3 3.5,1.15 cloudy); fi
 for c in "${CANDS[@]}"; do
   case "$c" in
     *,*) OPT="awb-enable=false colour-gains=<$c>" ;;
